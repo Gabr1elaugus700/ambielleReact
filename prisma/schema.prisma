@@ -1,0 +1,174 @@
+// Ajuste o provider/url conforme seu banco.
+// Para SQLite (como no Django atual):
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Enums equivalentes aos choices do Django
+enum TarefaStatus {
+  Iniciado
+  Coleta_De_Informações   // "Coleta de Informações" -> sem espaço, com underscore; acentos são permitidos mas evite em código
+  Execucao                // "Execução" -> sem acento para evitar problemas
+  Aprovação_Cliente       // "Aprovação Cliente" -> underscore
+  Concluído
+  Encerrado
+  Protocolado
+}
+
+enum TipoRelatorio {
+  impressao
+  excel
+}
+
+// Tabelas / Models
+
+model Cliente {
+  id                Int        @id @default(autoincrement())
+  nome              String
+  endereco          String
+  numero            Int?       // null=True
+  bairro            String?    // blank=True, null=True
+  razao_social      String?    // blank=True, null=True
+  telefone          String     // CharField(15)
+  email             String     // EmailField
+  contato_principal String
+  contato_secundario String?
+  proposta_link     String?    // URLField
+  cnpj              String     // CharField(15)
+
+  // Relações
+  tarefas   Tarefa[]
+  suportes  Suporte[]
+  relatorios Relatorio[]
+  licencas  Licenca[]
+
+  @@map("cliente")
+}
+
+model TipoServico {
+  id      Int       @id @default(autoincrement())
+  nome    String    @unique
+  orgao   String?   // blank=True (no Django CharField blank=True ainda salva "", mas aqui usamos opcional)
+  // Relações
+  servicos Servico[]
+  tarefas  Tarefa[]
+
+  @@map("tipo_servico")
+}
+
+model Servico {
+  id            Int          @id @default(autoincrement())
+  tipo_servico  Int
+  descricao     String?
+
+  // Relation
+  tipoServico   TipoServico  @relation(fields: [tipo_servico], references: [id], onDelete: Cascade)
+
+  @@map("servico")
+  @@index([tipo_servico])
+}
+
+model Tarefa {
+  id                  Int             @id @default(autoincrement())
+  tipo_servico        Int
+  cliente_id          Int
+  status              TarefaStatus    @default(Iniciado)
+  data_inicio         DateTime        @default(now()) // Django DateField(default=timezone.now). Em Prisma DateTime armazena data+hora; com SQLite é ISO string.
+  prazo_final         DateTime?
+  observacoes         String?
+  valor_total_servico Decimal?
+
+  // Relations
+  tipoServico         TipoServico     @relation(fields: [tipo_servico], references: [id], onDelete: Cascade)
+  cliente             Cliente         @relation(fields: [cliente_id], references: [id], onDelete: Cascade)
+  historico_status    HistoricoStatusTarefa[]
+  etapas              Etapa[]
+  relatorios          Relatorio[]
+
+  @@map("tarefa")
+  @@index([tipo_servico])
+  @@index([cliente_id])
+}
+
+model HistoricoStatusTarefa {
+  id           Int           @id @default(autoincrement())
+  tarefa_id    Int
+  status       TarefaStatus
+  data_mudanca DateTime      @default(now())
+
+  // Relation
+  tarefa       Tarefa        @relation(fields: [tarefa_id], references: [id], onDelete: Cascade)
+
+  @@map("historico_status_tarefa")
+  @@index([tarefa_id])
+  // Django Meta ordering = ['-data_mudanca'] não existe diretamente em Prisma;
+  // adicionamos índice para consultas por ordem de data_mudanca.
+  @@index([data_mudanca, tarefa_id])
+}
+
+model Etapa {
+  id               Int       @id @default(autoincrement())
+  tarefa_id        Int
+  nome_etapa       String
+  data_etapa       DateTime?
+  status_etapa     Boolean    @default(false)
+  observacoes_etapa String?
+
+  tarefa           Tarefa     @relation(fields: [tarefa_id], references: [id], onDelete: Cascade)
+
+  @@map("etapa")
+  @@index([tarefa_id])
+}
+
+model Suporte {
+  id            Int       @id @default(autoincrement())
+  cliente_id    Int
+  descricao     String
+  valor_hora    Decimal    @default(75.00)
+  data_suporte  DateTime   @default(now())
+  hora_inicio   DateTime   // Django TimeField -> representamos como DateTime guardando a data_suporte combinada ou apenas hora 00:00
+  hora_fim      DateTime?
+  tempo_suporte Decimal?
+  valor_total   Decimal?
+
+  cliente       Cliente    @relation(fields: [cliente_id], references: [id], onDelete: Cascade)
+
+  @@map("suporte")
+  @@index([cliente_id])
+}
+
+model Relatorio {
+  id                 Int           @id @default(autoincrement())
+  tarefa_id          Int
+  cliente_id         Int
+  descricao_relatorio String
+  data_relatorio     DateTime      @default(now())
+  tipo_relatorio     TipoRelatorio
+  filtro             String?
+
+  tarefa             Tarefa        @relation(fields: [tarefa_id], references: [id], onDelete: Cascade)
+  cliente            Cliente       @relation(fields: [cliente_id], references: [id], onDelete: Cascade)
+
+  @@map("relatorio")
+  @@index([tarefa_id])
+  @@index([cliente_id])
+}
+
+// Adicionando o modelo Licenca para corrigir o erro de referência
+model Licenca {
+  id         Int      @id @default(autoincrement())
+  cliente_id Int
+  nome       String
+  validade   DateTime?
+  observacao String?
+
+  cliente    Cliente  @relation(fields: [cliente_id], references: [id], onDelete: Cascade)
+
+  @@map("licenca")
+  @@index([cliente_id])
+}

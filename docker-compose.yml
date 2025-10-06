@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:16
+    container_name: ambielle_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ambielle
+      POSTGRES_PASSWORD: ambielle
+      POSTGRES_DB: ambielle
+    ports:
+      - "5555:5432"   # host 5555 -> container 5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
