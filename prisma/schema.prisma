@@ -1,7 +1,7 @@
 // Ajuste o provider/url conforme seu banco.
 // Para SQLite (como no Django atual):
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql" 
   url      = env("DATABASE_URL")
 }
 
@@ -9,7 +9,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Enums equivalentes aos choices do Django
 enum TarefaStatus {
   Iniciado
   Coleta_De_Informações   // "Coleta de Informações" -> sem espaço, com underscore; acentos são permitidos mas evite em código
