@@ -1,11 +1,9 @@
-import { AppHeader } from "@/components/app-header"
 import { StatsCards } from "@/components/stats-cards"
 import { Kanban } from "@/components/kanban"
 
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
-      <AppHeader />
       <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Olá, Gisele!</h1>

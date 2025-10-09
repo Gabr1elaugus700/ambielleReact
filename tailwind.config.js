@@ -14,11 +14,11 @@ module.exports = {
         display: ["Poppins", "sans-serif"],
       },
       colors: {
-        pprimary: {
+        primary: {
           DEFAULT: "#3b82f6",
           600: "#2563eb",
         },
-        background: { light: "#f7fafc", dark: "#1a202c" },
+        background: { light: "hsl(220, 20%, 97%)", dark: "#1a202c" },
         status: {
           iniciado: "#fef08a",
           coleta: "#93c5fd",
@@ -30,6 +30,13 @@ module.exports = {
           "execucao-border": "#4ade80",
           "aprovacao-border": "#fb923c",
           "protocolado-border": "#f87171",
+        },
+        modal: { 
+          light: "#ffffff", 
+          dark: "#2d3748" 
+        },
+        form: {
+          label: "#4a5568"
         },
       },
       borderRadius: { DEFAULT: "0.5rem" },

@@ -16,7 +16,7 @@ type Props = {
 export function TaskDialog({ open, onOpenChange, data }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-lg bg-modal-light dark:bg-modal-dark">
         <DialogHeader>
           <DialogTitle>Detalhes da Tarefa</DialogTitle>
         </DialogHeader>
@@ -41,7 +41,7 @@ export function TaskDialog({ open, onOpenChange, data }: Props) {
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60 bg-modal-light dark:bg-modal-dark  ">
                   <SelectItem value="Iniciado">Iniciado</SelectItem>
                   <SelectItem value="Coleta">Coleta</SelectItem>
                   <SelectItem value="Execução">Execução</SelectItem>

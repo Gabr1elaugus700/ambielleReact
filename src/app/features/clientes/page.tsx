@@ -1,30 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-// import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import { PlusIcon } from "lucide-react";
-import { ClienteInput } from "@/app/features/clientes/api";
+import { Cliente, ClienteInput } from "@/app/features/clientes/api";
 
 import { useClientes } from "@/app/features/clientes/hooks";
-import { on } from "events";
+import { ModalCliente } from "./components/modalCreateCliente";
+import { DataTable } from "@/components/ui/dataTable";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+// Definição das colunas da tabela de clientes
+const columns = [
+  { key: "nome", label: "Nome" },
+  { key: "razao_social", label: "Razão Social" },
+  { key: "cnpj", label: "CNPJ" },
+  { key: "telefone", label: "Telefone" },
+  { key: "email", label: "Email" },
+  { key: "endereco", label: "Endereço" },
+  { key: "contato_principal", label: "Contato Principal" },
+];
 
 export default function ClientesPage() {
-  // Hook customizado para buscar clientes e manipular dados
-  const { clientes, isLoading, isError, create } = useClientes();
+  const { clientes, isLoading, isError, create, update, remove } =
+    useClientes();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [modalEditCliente, setModalEditCliente] = useState(false);
+  const [clienteToEdit, setClienteToEdit] = useState<Cliente | null>(null);
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [clienteToDelete, setClienteToDelete] = useState<Cliente | null>(null);
+
+  // Função editar cliente
+  async function handleEditCliente(row: Cliente) {
+    setClienteToEdit(row);
+    setModalEditCliente(true);
+  }
+
+  // Excluir cliente
+  function handleDeleteClick(row: Cliente) {
+    setClienteToDelete(row);
+    setShowDeleteModal(true);
+  }
   // Função chamada ao salvar novo cliente
   const handleCreateCliente = async (data: ClienteInput) => {
     try {
@@ -35,187 +59,128 @@ export default function ClientesPage() {
     }
   };
 
+  async function confirmDeleteCliente(id: number) {
+    try {
+      await remove(id);
+      toast.success("Cliente excluído com sucesso!");
+      setShowDeleteModal(false);
+      setClienteToDelete(null);
+    } catch (error) {
+      toast.error("Erro ao excluir cliente." + (error as Error).message);
+    }
+  }
+
+  // Função chamada ao salvar edição
+  const handleUpdateCliente = async (data: ClienteInput) => {
+    try {
+      if (!clienteToEdit) return;
+      await update(clienteToEdit.id, data);
+      setModalEditCliente(false);
+      setClienteToEdit(null);
+    } catch (error) {
+      console.error("Erro ao editar cliente:", error);
+    }
+  };
+
   // Renderização principal da página
   return (
-    <div className="space-y-6 p-4">
-      <h1 className="text-2xl font-bold mb-4">Clientes</h1>
-      {/* Botão para abrir modal de cadastro */}
-      <Button onClick={() => setShowCreateModal(true)}>
-        <PlusIcon className="mr-2" /> Novo Cliente
-      </Button>
+    <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
+      <div className="space-y-6 p-4">
+        <section className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold mb-4">Clientes</h1>
+        {/* Botão para abrir modal de cadastro */}
+        <Button 
+          onClick={() => setShowCreateModal(true)} 
+          className="px-2 py-1 text-sm font-medium rounded border border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black"
+          variant={"outline"}
+          >
+          <PlusIcon className="mr-2" /> Novo Cliente
+        </Button>
+        </section>
 
-      {/* Tabela de clientes */}
-      {isLoading ? (
-        <p>Carregando clientes...</p>
-      ) : isError ? (
-        <p>Erro ao carregar clientes.</p>
-      ) : (
-        <table className="w-full border mt-4">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border px-2 py-1">Nome</th>
-              <th className="border px-2 py-1">CNPJ</th>
-              <th className="border px-2 py-1">Telefone</th>
-              <th className="border px-2 py-1">Email</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clientes?.map((cliente) => (
-              <tr key={cliente.id} className="hover:bg-gray-50">
-                <td className="border px-2 py-1">{cliente.nome}</td>
-                <td className="border px-2 py-1">{cliente.cnpj}</td>
-                <td className="border px-2 py-1">{cliente.telefone}</td>
-                <td className="border px-2 py-1">{cliente.email}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        {/* Tabela de clientes */}
+        {isLoading ? (
+          <p>Carregando clientes...</p>
+        ) : isError ? (
+          <p>Erro ao carregar clientes.</p>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={clientes ?? []}
+            tableCaption="Tabela de Clientes"
+            onEdit={handleEditCliente}
+            onDelete={handleDeleteClick}
+          />
+        )}
 
-      {/* Modal de cadastro de cliente */}
-      {showCreateModal && (
-        <CreateClienteModal
-          onClose={() => setShowCreateModal(false)}
-          onSave={handleCreateCliente}
-        />
-      )}
-    </div>
+        {modalEditCliente && clienteToEdit && (
+          <ModalEditCliente
+            row={clienteToEdit}
+            onClose={() => {
+              setModalEditCliente(false);
+              setClienteToEdit(null);
+            }}
+            onSave={handleUpdateCliente}
+          />
+        )}
+        {showCreateModal && (
+          <ModalCliente
+            onClose={() => setShowCreateModal(false)}
+            onSave={handleCreateCliente}
+          />
+        )}
+
+        {showDeleteModal && clienteToDelete && (
+          <ModalExcluirCliente
+            row={clienteToDelete}
+            onClose={() => {
+              setShowDeleteModal(false);
+              setClienteToDelete(null);
+            }}
+            onDelete={confirmDeleteCliente}
+          />
+        )}
+      </div>
+    </main>
   );
 }
 
-function CreateClienteModal({
+// ModalEditCliente agora recebe onSave
+function ModalEditCliente({
+  row,
   onClose,
   onSave,
 }: {
+  row: Cliente;
   onClose: () => void;
   onSave: (data: ClienteInput) => void;
 }) {
-  const [nome, setNome] = useState("");
-  const [endereco, setEndereco] = useState("");
-  const [numero, setNumero] = useState("");
-  const [bairro, setBairro] = useState("");
-  const [razao_social, setRazaoSocial] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [email, setEmail] = useState("");
-  const [contato_principal, setContatoPrincipal] = useState("");
-  const [contato_secundario, setContatoSecundario] = useState("");
-  const [proposta_link, setPropostaLink] = useState("");
-  const [cnpj, setCnpj] = useState("");
+  return <ModalCliente onClose={onClose} onSave={onSave} cliente={row} />;
+}
 
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave({
-      nome,
-      endereco,
-      numero: numero ? Number(numero) : null,
-      bairro,
-      razao_social,
-      telefone,
-      email,
-      contato_principal,
-      contato_secundario,
-      proposta_link,
-      cnpj,
-    });
-  };
-
-  // Modal de cadastro de cliente
+function ModalExcluirCliente({
+  row,
+  onClose,
+  onDelete,
+}: {
+  row: Cliente;
+  onClose: () => void;
+  onDelete: (id: number) => void;
+}) {
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="p-6 bg-white rounded shadow-lg">
         <DialogHeader>
-          <DialogTitle>Cadastro de Clientes</DialogTitle>
+          <DialogTitle>Excluir Cliente</DialogTitle>
           <DialogDescription>
-            Preencha os dados do cliente e clique em salvar.
+            Tem certeza que deseja excluir o cliente{" "}
+            <span className="font-bold">{row.nome}</span>?
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <input
-                className="border px-2 py-1 rounded"
-                placeholder="Nome"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                required
-              />
-              <input
-                className="border px-2 py-1 rounded"
-                placeholder="CNPJ"
-                value={cnpj}
-                onChange={(e) => setCnpj(e.target.value)}
-                required
-              />
-              <input
-                className="border px-2 py-1 rounded"
-                placeholder="Telefone"
-                value={telefone}
-                onChange={(e) => setTelefone(e.target.value)}
-                required
-              />
-              <input
-                className="border px-2 py-1 rounded"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <input
-                className="border px-2 py-1 rounded"
-                placeholder="Endereço"
-                value={endereco}
-                onChange={(e) => setEndereco(e.target.value)}
-              />
-              <input
-                className="border px-2 py-1 rounded"
-                placeholder="Número"
-                value={numero}
-                onChange={(e) => setNumero(e.target.value)}
-              />
-              <input
-                className="border px-2 py-1 rounded"
-                placeholder="Bairro"
-                value={bairro}
-                onChange={(e) => setBairro(e.target.value)}
-              />
-              <input
-                className="border px-2 py-1 rounded"
-                placeholder="Razão Social"
-                value={razao_social}
-                onChange={(e) => setRazaoSocial(e.target.value)}
-              />
-              <input
-                className="border px-2 py-1 rounded"
-                placeholder="Contato Principal"
-                value={contato_principal}
-                onChange={(e) => setContatoPrincipal(e.target.value)}
-              />
-              <input
-                className="border px-2 py-1 rounded"
-                placeholder="Contato Secundário"
-                value={contato_secundario}
-                onChange={(e) => setContatoSecundario(e.target.value)}
-              />
-              <input
-                className="border px-2 py-1 rounded"
-                placeholder="Link da Proposta"
-                value={proposta_link}
-                onChange={(e) => setPropostaLink(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline" type="button" onClick={onClose}>Cancelar</Button>
-            </DialogClose>
-            <Button type="submit" disabled={saving}>
-              Salvar
-            </Button>
-          </DialogFooter>
-        </form>
+        <Button variant="outline" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button onClick={() => onDelete(row.id)}>Excluir</Button>
       </DialogContent>
     </Dialog>
   );
