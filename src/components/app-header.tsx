@@ -13,6 +13,8 @@ const navLinks = [
   { name: "Início", href: "/features/home" },
   { name: "Clientes", href: "/features/clientes" },
   { name: "Serviços", href: "/features/servicos" },
+  { name: "Tarefas", href: "/features/tarefas" },
+  { name: "Relatórios", href: "/features/relatorios" },
 ];
 
 export function AppHeader() {

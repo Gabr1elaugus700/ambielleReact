@@ -31,6 +31,14 @@ module.exports = {
           "aprovacao-border": "#fb923c",
           "protocolado-border": "#f87171",
         },
+        cardColor: {
+          laranja: "hsl(25, 95%, 53%)",
+          verde: "hsl(142, 76%, 36%)",
+          azul: "hsl(217, 91%, 60%)",
+          amarelo: "hsl(45, 93%, 47%)",
+          roxo: "hsl(271, 81%, 56%)",
+          vermelho: "hsl(0, 84%, 60%)",
+        },
         modal: { 
           light: "#ffffff", 
           dark: "#2d3748" 
