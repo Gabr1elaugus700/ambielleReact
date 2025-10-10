@@ -15,6 +15,7 @@ const navLinks = [
   { name: "Serviços", href: "/features/servicos" },
   { name: "Tarefas", href: "/features/tarefas" },
   { name: "Relatórios", href: "/features/relatorios" },
+  { name: "Suportes", href: "/features/suportes" },
 ];
 
 export function AppHeader() {

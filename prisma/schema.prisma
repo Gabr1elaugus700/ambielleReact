@@ -130,7 +130,7 @@ model Suporte {
   descricao     String
   valor_hora    Decimal    @default(75.00)
   data_suporte  DateTime   @default(now())
-  hora_inicio   DateTime   // Django TimeField -> representamos como DateTime guardando a data_suporte combinada ou apenas hora 00:00
+  hora_inicio   DateTime   
   hora_fim      DateTime?
   tempo_suporte Decimal?
   valor_total   Decimal?

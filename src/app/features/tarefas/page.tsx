@@ -96,17 +96,13 @@ export default function Atividades() {
         </div>
         
         <div className="flex gap-3">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2 px-2 py-1 text-xs rounded border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-amber-400 hover:text-black hover:border-black">
             <Filter className="h-4 w-4" />
             Filtrar Atividades
           </Button>
-          <Button className="gap-2">
+          <Button variant="outline" className="px-2 py-1 text-xs rounded border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black">
             <Plus className="h-4 w-4" />
             Nova Tarefa
-          </Button>
-          <Button variant="secondary" className="gap-2">
-            <Package className="h-4 w-4" />
-            Materiais
           </Button>
         </div>
       </div>

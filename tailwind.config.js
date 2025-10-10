@@ -19,6 +19,12 @@ module.exports = {
           600: "#2563eb",
         },
         background: { light: "hsl(220, 20%, 97%)", dark: "#1a202c" },
+        foreground: { light: "hsl(220, 15%, 20%)", dark: "hsl(220, 15%, 95%)" },
+        muted: {
+          light: "hsl(220, 15%, 94%)",
+          dark: "hsl(220, 20%, 30%)",
+          foreground: "hsl(220, 10%, 50%)"
+        },
         status: {
           iniciado: "#fef08a",
           coleta: "#93c5fd",

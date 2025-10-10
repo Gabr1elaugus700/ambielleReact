@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PlusIcon } from "lucide-react";
-import { Cliente, ClienteInput } from "@/app/features/clientes/api";
+import { TipoServico, TipoServicoInput } from "@/app/features/servicos/api";
+import { ModalServicos } from "@/app/features/servicos/components/ModalServicos"
 
-import { useClientes } from "@/app/features/clientes/hooks";
+import { useServicos } from "@/app/features/servicos/hooks";
 import { DataTable } from "@/components/ui/dataTable";
 import {
   Dialog,
@@ -15,41 +16,39 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Column } from "@/types/types"
 
 // Definição das colunas da tabela de clientes
-const columns = [
-  { key: "nome", label: "Nome" },
-  { key: "razao_social", label: "Razão Social" },
-  { key: "cnpj", label: "CNPJ" },
-  { key: "telefone", label: "Telefone" },
-  { key: "email", label: "Email" },
-  { key: "endereco", label: "Endereço" },
-  { key: "contato_principal", label: "Contato Principal" },
+const columns: Column<TipoServico>[] = [
+  { key: "nome", header: "Nome" },
+  { key: "orgao", header: "Orgão Competente" },
 ];
 
 export default function ClientesPage() {
-  const { clientes, isLoading, isError, create, update, remove } =
-    useClientes();
+  const { servicos, isLoading, isError, create, update, remove } =
+    useServicos();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [modalEditCliente, setModalEditCliente] = useState(false);
-  const [clienteToEdit, setClienteToEdit] = useState<Cliente | null>(null);
+  const [modalEditServico, setmodalEditServico] = useState(false);
+
+  const [servicoToEdit, setservicoToEdit] = useState<TipoServico | null>(null);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [clienteToDelete, setClienteToDelete] = useState<Cliente | null>(null);
+  const [clienteToDelete, setClienteToDelete] = useState<TipoServico | null>(null);
 
   // Função editar cliente
-  async function handleEditCliente(row: Cliente) {
-    setClienteToEdit(row);
-    setModalEditCliente(true);
+  async function handleEditServico(row: TipoServico) {
+    setservicoToEdit(row);
+    setmodalEditServico(true);
   }
 
   // Excluir cliente
-  function handleDeleteClick(row: Cliente) {
+  function handleDeleteClick(row: TipoServico) {
     setClienteToDelete(row);
     setShowDeleteModal(true);
   }
-  // Função chamada ao salvar novo cliente
-  const handleCreateCliente = async (data: ClienteInput) => {
+
+  // Função chamada ao salvar novo servico
+  const handleCreateServico = async (data: TipoServicoInput) => {
     try {
       await create(data);
       setShowCreateModal(false);
@@ -58,7 +57,7 @@ export default function ClientesPage() {
     }
   };
 
-  async function confirmDeleteCliente(id: number) {
+  async function confirmDeleteServico(id: number) {
     try {
       await remove(id);
       toast.success("Cliente excluído com sucesso!");
@@ -70,62 +69,61 @@ export default function ClientesPage() {
   }
 
   // Função chamada ao salvar edição
-  const handleUpdateCliente = async (data: ClienteInput) => {
+  const handleUpdateCliente = async (data: TipoServicoInput) => {
     try {
-      if (!clienteToEdit) return;
-      await update(clienteToEdit.id, data);
-      setModalEditCliente(false);
-      setClienteToEdit(null);
+      if (!servicoToEdit) return;
+      await update(servicoToEdit.id, data);
+      setmodalEditServico(false);
+      setservicoToEdit(null);
     } catch (error) {
       console.error("Erro ao editar cliente:", error);
     }
   };
-
   // Renderização principal da página
   return (
     <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="space-y-6 p-4">
         <section className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold mb-4">Clientes</h1>
+        <h1 className="text-2xl font-bold mb-4">Serviços</h1>
         {/* Botão para abrir modal de cadastro */}
         <Button 
           onClick={() => setShowCreateModal(true)} 
           className="px-2 py-1 text-sm font-medium rounded border border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black"
           variant={"outline"}
           >
-          <PlusIcon className="mr-2" /> Novo Cliente
+          <PlusIcon className="mr-2" /> Cadastrar Serviços
         </Button>
         </section>
 
         {/* Tabela de clientes */}
         {isLoading ? (
-          <p>Carregando clientes...</p>
+          <p>Carregando Serviços...</p>
         ) : isError ? (
-          <p>Erro ao carregar clientes.</p>
+          <p>Erro ao carregar Serviços.</p>
         ) : (
           <DataTable
             columns={columns}
-            data={clientes ?? []}
-            tableCaption="Tabela de Clientes"
-            onEdit={handleEditCliente}
+            data={servicos ?? []}
+            tableCaption="Tabela de Serviços"
+            onEdit={handleEditServico}
             onDelete={handleDeleteClick}
           />
         )}
 
-        {modalEditCliente && clienteToEdit && (
-          <ModalEditCliente
-            row={clienteToEdit}
+        {modalEditServico && servicoToEdit && (
+          <ModalEditServico
+            row={servicoToEdit}
             onClose={() => {
-              setModalEditCliente(false);
-              setClienteToEdit(null);
+              setmodalEditServico(false);
+              setservicoToEdit(null);
             }}
             onSave={handleUpdateCliente}
           />
         )}
         {showCreateModal && (
-          <ModalCliente
+          <ModalServicos
             onClose={() => setShowCreateModal(false)}
-            onSave={handleCreateCliente}
+            onSave={handleCreateServico}
           />
         )}
 
@@ -136,7 +134,7 @@ export default function ClientesPage() {
               setShowDeleteModal(false);
               setClienteToDelete(null);
             }}
-            onDelete={confirmDeleteCliente}
+            onDelete={confirmDeleteServico}
           />
         )}
       </div>
@@ -144,17 +142,17 @@ export default function ClientesPage() {
   );
 }
 
-// ModalEditCliente agora recebe onSave
-function ModalEditCliente({
+// modalEditServico agora recebe onSave
+function ModalEditServico({
   row,
   onClose,
   onSave,
 }: {
-  row: Cliente;
+  row: TipoServico;
   onClose: () => void;
-  onSave: (data: ClienteInput) => void;
+  onSave: (data: TipoServicoInput) => void;
 }) {
-  return <ModalCliente onClose={onClose} onSave={onSave} cliente={row} />;
+  return <ModalServicos onClose={onClose} onSave={onSave} servico={row} />;
 }
 
 function ModalExcluirCliente({
@@ -162,7 +160,7 @@ function ModalExcluirCliente({
   onClose,
   onDelete,
 }: {
-  row: Cliente;
+  row: TipoServico;
   onClose: () => void;
   onDelete: (id: number) => void;
 }) {
@@ -172,7 +170,7 @@ function ModalExcluirCliente({
         <DialogHeader>
           <DialogTitle>Excluir Cliente</DialogTitle>
           <DialogDescription>
-            Tem certeza que deseja excluir o cliente{" "}
+            Tem certeza que deseja excluir o Serviço:{" "}
             <span className="font-bold">{row.nome}</span>?
           </DialogDescription>
         </DialogHeader>
