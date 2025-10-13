@@ -12,47 +12,45 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-import { ClienteInput } from "@/app/features/clientes/api";
+import { TarefaInput } from "@/app/features/tarefas/api";
 import { useEffect, useState } from "react";
 import { FormInput } from "@/components/ui/formInput";
 
 type ModalCreateTarefaProps = {
   onClose: () => void;
-  onSave: (data: ClienteInput) => void;
-  tarefa?: ClienteInput 
+  onSave: (data: TarefaInput) => void;
+  tarefa?: TarefaInput;
 };
 
-export function ModalCliente({
+export function ModalTarefa({
   onClose,
   onSave,
   tarefa
 }: ModalCreateTarefaProps) {
-  const [nome, setNome] = useState(cliente?.nome ?? "");
-  const [endereco, setEndereco] = useState(cliente?.endereco ?? "");
-  const [numero, setNumero] = useState(cliente?.numero?.toString() ?? "");
-  const [bairro, setBairro] = useState(cliente?.bairro ?? "");
-  const [razao_social, setRazaoSocial] = useState(cliente?.razao_social ?? "");
-  const [telefone, setTelefone] = useState(cliente?.telefone ?? "");
-  const [email, setEmail] = useState(cliente?.email ?? "");
-  const [contato_principal, setContatoPrincipal] = useState(cliente?.contato_principal ?? "");
-  const [proposta_link, setPropostaLink] = useState(cliente?.proposta_link ?? "");
-  const [cnpj, setCnpj] = useState(cliente?.cnpj ?? "");
+  const [numero, setNumero] = useState(tarefa?.numero?.toString() ?? "");
+  const [bairro, setBairro] = useState(tarefa?.bairro ?? "");
+  const [razao_social, setRazaoSocial] = useState(tarefa?.razao_social ?? "");
+  const [telefone, setTelefone] = useState(tarefa?.telefone ?? "");
+  const [email, setEmail] = useState(tarefa?.email ?? "");
+  const [contato_principal, setContatoPrincipal] = useState(tarefa?.contato_principal ?? "");
+  const [proposta_link, setPropostaLink] = useState(tarefa?.proposta_link ?? "");
+  const [cnpj, setCnpj] = useState(tarefa?.cnpj ?? "");
 
   const [saving, setSaving] = useState(false);
   const [, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setNome(cliente?.nome ?? "");
-    setEndereco(cliente?.endereco ?? "");
-    setNumero(cliente?.numero?.toString() ?? "");
-    setBairro(cliente?.bairro ?? "");
-    setRazaoSocial(cliente?.razao_social ?? "");
-    setTelefone(cliente?.telefone ?? "");
-    setEmail(cliente?.email ?? "");
-    setContatoPrincipal(cliente?.contato_principal ?? "");
-    setPropostaLink(cliente?.proposta_link ?? "");
-    setCnpj(cliente?.cnpj ?? "");
-  }, [cliente]);
+    setNome(tarefa?.nome ?? "");
+    setEndereco(tarefa?.endereco ?? "");
+    setNumero(tarefa?.numero?.toString() ?? "");
+    setBairro(tarefa?.bairro ?? "");
+    setRazaoSocial(tarefa?.razao_social ?? "");
+    setTelefone(tarefa?.telefone ?? "");
+    setEmail(tarefa?.email ?? "");
+    setContatoPrincipal(tarefa?.contato_principal ?? "");
+    setPropostaLink(tarefa?.proposta_link ?? "");
+    setCnpj(tarefa?.cnpj ?? "");
+  }, [tarefa]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,19 +69,19 @@ export function ModalCliente({
       proposta_link,
       cnpj,
     });
-    toast.success("Cliente criado com sucesso!");
+    toast.success("tarefa criado com sucesso!");
   };
 
-  // Modal de cadastro de cliente
+  // Modal de cadastro de tarefa
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-modal-light dark:bg-modal-dark">
         <DialogHeader>
           <DialogTitle>
-            {cliente ? "Editar Cliente" : "Cadastro de Clientes"}
+            {tarefa ? "Editar tarefa" : "Cadastro de tarefas"}
           </DialogTitle>
           <DialogDescription>
-            Preencha os dados do cliente e clique em salvar.
+            Preencha os dados do tarefa e clique em salvar.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
