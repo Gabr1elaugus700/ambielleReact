@@ -18,12 +18,48 @@ import {
 } from "@/components/ui/dialog";
 import { Column } from "@/types/types"
 
+// Funções de formatação para exibição na tabela
+const formatarCNPJ = (cnpj: string) => {
+  if (!cnpj) return "";
+  const numeros = cnpj.replace(/\D/g, "");
+  return numeros
+    .slice(0, 14)
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+};
+
+const formatarTelefone = (telefone: string) => {
+  if (!telefone) return "";
+  const numeros = telefone.replace(/\D/g, "");
+  if (numeros.length <= 10) {
+    return numeros
+      .slice(0, 10)
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  } else {
+    return numeros
+      .slice(0, 11)
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{5})(\d)/, "$1-$2");
+  }
+};
+
 // Definição das colunas da tabela de clientes
 const columns: Column<Cliente>[] = [
   { key: "nome", header: "Nome" },
   { key: "razao_social", header: "Razão Social" },
-  { key: "cnpj", header: "CNPJ" },
-  { key: "telefone", header: "Telefone" },
+  { 
+    key: "cnpj", 
+    header: "CNPJ",
+    render: (value: string | number | null | undefined) => formatarCNPJ(String(value || ""))
+  },
+  { 
+    key: "telefone", 
+    header: "Telefone",
+    render: (value: string | number | null | undefined) => formatarTelefone(String(value || ""))
+  },
   { key: "email", header: "Email" },
   { key: "endereco", header: "Endereço" },
   { key: "contato_principal", header: "Contato Principal" },
