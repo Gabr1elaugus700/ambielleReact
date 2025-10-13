@@ -1,5 +1,5 @@
-import { StatsCards } from "@/components/stats-cards"
-import { Kanban } from "@/components/kanban"
+import { StatsCards } from "@/app/features/home/components/stats-cards"
+import { Kanban } from "@/app/features/home/components/kanban"
 
 export default function Home() {
   return (

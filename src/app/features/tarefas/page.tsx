@@ -106,9 +106,10 @@ const tarefaParaAtividade = (tarefa: TarefaCompleta): Atividade => {
     id: tarefa.id.toString(),
     empresa: tarefa.cliente?.nome || "Cliente não informado",
     tipo: tarefa.tipoServico?.nome || "Tipo não informado",
+    data_inicio: formatarData(tarefa.data_inicio),
     prazo_final: formatarData(tarefa.prazo_final),
     valor_sn: formatarValor(tarefa.valor_total_servico || 0),
-    retencao: tarefa.observacoes || "SEM OBSERVAÇÃO", 
+    observacao: tarefa.observacoes || "SEM OBSERVAÇÃO", 
     servico: tarefa.status || "Status não informado", // Aqui colocamos o status real da tarefa
     status: mapearStatusParaAtividade(tarefa.status),
     cor: getCorPorStatus(tarefa.status),
@@ -116,7 +117,7 @@ const tarefaParaAtividade = (tarefa: TarefaCompleta): Atividade => {
 };
 
 export default function Page() {
-  const { tarefas, isLoading, isError, create } = useTarefas();
+  const { tarefas, isLoading, isError, create, update } = useTarefas();
   const [selectedAtividade, setSelectedAtividade] = useState<Atividade | null>(
     null
   );
@@ -148,6 +149,40 @@ export default function Page() {
   const handleAtividadeClick = (atividade: Atividade) => {
     setSelectedAtividade(atividade);
     setModalOpen(true);
+  };
+
+  const handleUpdateAtividade = async (id: string, dadosAtividade: Partial<Atividade>) => {
+    try {
+      // Converter os dados da atividade para o formato da API
+      const dadosTarefa = {
+        valor_total_servico: dadosAtividade.valor_sn?.replace(/[R$\s.,]/g, '') ? parseFloat(dadosAtividade.valor_sn.replace(/[R$\s.,]/g, '')) : undefined,
+        observacoes: dadosAtividade.observacao,
+        status: dadosAtividade.servico as TarefaStatus, // Status da tarefa
+        data_inicio: dadosAtividade.data_inicio ? converterDataParaISO(dadosAtividade.data_inicio) : undefined,
+        prazo_final: dadosAtividade.prazo_final ? converterDataParaISO(dadosAtividade.prazo_final) : undefined,
+      };
+
+      // Remover campos undefined
+      const dadosLimpos = Object.fromEntries(
+        Object.entries(dadosTarefa).filter(([, value]) => value !== undefined)
+      );
+
+      await update(parseInt(id), dadosLimpos);
+      toast.success("Atividade atualizada com sucesso!");
+    } catch (error) {
+      console.error("Erro ao atualizar atividade:", error);
+      throw error;
+    }
+  };
+
+  // Função auxiliar para converter data de DD/MM/YYYY para YYYY-MM-DD
+  const converterDataParaISO = (data: string): string => {
+    if (!data) return "";
+    const partes = data.split('/');
+    if (partes.length === 3) {
+      return `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+    }
+    return data;
   };
 
   // Funções de filtro
@@ -445,6 +480,7 @@ export default function Page() {
           atividade={selectedAtividade}
           open={modalOpen}
           onOpenChange={setModalOpen}
+          onUpdate={handleUpdateAtividade}
         />
       </div>
     </main>

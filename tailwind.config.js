@@ -30,12 +30,12 @@ module.exports = {
           coleta: "#93c5fd",
           execucao: "#86efac",
           aprovacao: "#fdbb74",
-          protocolado: "#fca5a5",
+          protocolado: "#a78bfa", // Nova cor para protocolado (roxo claro)
           "iniciado-border": "#facc15",
           "coleta-border": "#60a5fa",
           "execucao-border": "#4ade80",
           "aprovacao-border": "#fb923c",
-          "protocolado-border": "#f87171",
+          "protocolado-border": "#a78bfa", // Nova cor para protocolado-border (roxo claro)
         },
         cardColor: {
           laranja: "hsl(25, 95%, 53%)",

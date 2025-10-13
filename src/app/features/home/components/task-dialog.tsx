@@ -21,6 +21,8 @@ type TaskData = {
   client: string;
   task: string;
   date: string;
+  startDate?: string;
+  endDate?: string;
   status: string;
   description: string;
 };
@@ -65,12 +67,26 @@ export function TaskDialog({ open, onOpenChange, data }: Props) {
               <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">
-                  Prazo
+                  Data Inicial
                 </Label>
                 <p className="text-gray-800 dark:text-gray-200 mt-1">
-                  {data.date}
-                  {/* {new Date(data.date).toLocaleDateString('pt-BR')} */}
+                  {data.startDate || "Não informado"}
                 </p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-3">
+              <Calendar className="h-5 w-5 text-orange-500 mt-0.5" />
+              <div className="flex-1">
+                <Label className="text-sm font-medium text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                  Prazo Término
+                </Label>
+                <div className="mt-1 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 px-3 py-2 rounded-lg border-l-4 border-orange-500 shadow-sm">
+                  <p className="text-gray-800 dark:text-gray-200 font-semibold text-base">
+                    {data.endDate || data.date || "Não definido"}
+                  </p>
+                </div>
               </div>
             </div>
             <div className="flex items-start gap-3 ">

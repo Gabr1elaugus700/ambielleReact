@@ -59,8 +59,18 @@ export function AtividadeCard({ atividade, onClick }: AtividadeCardProps) {
           <div className="flex items-start gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <div>
-              <span className="font-medium text-foreground">Prazo Final: </span>
+              <span className="font-medium text-foreground">Data Inicial: </span>
               <span className="text-muted-foreground">
+                {atividade.data_inicio || "Não informado"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2">
+            <Calendar className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="font-medium text-orange-600">Prazo Término: </span>
+              <span className="text-muted-foreground font-semibold bg-orange-50 px-1 rounded">
                 {atividade.prazo_final}
               </span>
             </div>
@@ -77,8 +87,8 @@ export function AtividadeCard({ atividade, onClick }: AtividadeCardProps) {
           <div className="flex items-start gap-2">
             <FileText className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <div>
-              <span className="font-medium text-foreground">Retenção: </span>
-              <span className="text-muted-foreground">{atividade.retencao}</span>
+              <span className="font-medium text-foreground">Observação: </span>
+              <span className="text-muted-foreground">{atividade.observacao}</span>
             </div>
           </div>
 
