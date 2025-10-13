@@ -12,69 +12,150 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-import { TarefaInput } from "@/app/features/tarefas/api";
+import { TarefaInput, TarefaStatus } from "@/app/features/tarefas/api";
 import { useEffect, useState } from "react";
+import { ClienteSelect } from "@/components/ui/clienteSelect";
+import { Cliente } from "@/app/features/clientes/api";
 import { FormInput } from "@/components/ui/formInput";
 
-type ModalCreateTarefaProps = {
+// Tipo para TipoServico
+type TipoServico = {
+  id: number;
+  nome: string;
+  orgao?: string;
+};
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
+type ModalTarefaProps = {
+  open: boolean;
   onClose: () => void;
-  onSave: (data: TarefaInput) => void;
+  onSave?: (data: TarefaInput) => void;
   tarefa?: TarefaInput;
 };
 
-export function ModalTarefa({
-  onClose,
-  onSave,
-  tarefa
-}: ModalCreateTarefaProps) {
-  const [numero, setNumero] = useState(tarefa?.numero?.toString() ?? "");
-  const [bairro, setBairro] = useState(tarefa?.bairro ?? "");
-  const [razao_social, setRazaoSocial] = useState(tarefa?.razao_social ?? "");
-  const [telefone, setTelefone] = useState(tarefa?.telefone ?? "");
-  const [email, setEmail] = useState(tarefa?.email ?? "");
-  const [contato_principal, setContatoPrincipal] = useState(tarefa?.contato_principal ?? "");
-  const [proposta_link, setPropostaLink] = useState(tarefa?.proposta_link ?? "");
-  const [cnpj, setCnpj] = useState(tarefa?.cnpj ?? "");
+export function ModalTarefa({ open, onClose, onSave, tarefa }: ModalTarefaProps) {
+  const [tipoServico, setTipoServico] = useState(
+    tarefa?.tipo_servico?.toString() ?? ""
+  );
+  const [dataInicio, setDataInicio] = useState(
+    tarefa?.data_inicio?.toString() ?? ""
+  );
+  const [dataFim, setDataFim] = useState(tarefa?.prazo_final?.toString() ?? "");
+  const [observacao, setObservacao] = useState(tarefa?.observacoes ?? "");
+  const [valorTotalServico, setValorTotalServico] = useState(
+    tarefa?.valor_total_servico?.toString() ?? ""
+  );
+  const [status, setStatus] = useState(tarefa?.status ?? "");
+  const [clienteId, setClienteId] = useState<number>(0);
+  const [tiposServico, setTiposServico] = useState<TipoServico[]>([]);
+  const [loadingTipos, setLoadingTipos] = useState(false);
 
+  const handleClienteChange = (cliente: Cliente | null) => {
+    setClienteId(cliente?.id || 0);
+  };
   const [saving, setSaving] = useState(false);
   const [, setError] = useState<string | null>(null);
 
+  // Carregar tipos de serviço
   useEffect(() => {
-    setNome(tarefa?.nome ?? "");
-    setEndereco(tarefa?.endereco ?? "");
-    setNumero(tarefa?.numero?.toString() ?? "");
-    setBairro(tarefa?.bairro ?? "");
-    setRazaoSocial(tarefa?.razao_social ?? "");
-    setTelefone(tarefa?.telefone ?? "");
-    setEmail(tarefa?.email ?? "");
-    setContatoPrincipal(tarefa?.contato_principal ?? "");
-    setPropostaLink(tarefa?.proposta_link ?? "");
-    setCnpj(tarefa?.cnpj ?? "");
+    const loadTiposServico = async () => {
+      setLoadingTipos(true);
+      try {
+        const response = await fetch('/api/tipos-servico');
+        if (response.ok) {
+          const data = await response.json();
+          setTiposServico(data);
+        } else {
+          toast.error("Erro ao carregar tipos de serviço");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar tipos de serviço:", error);
+        toast.error("Erro ao carregar tipos de serviço");
+      } finally {
+        setLoadingTipos(false);
+      }
+    };
+
+    loadTiposServico();
+  }, []);
+
+  useEffect(() => {
+    setTipoServico(tarefa?.tipo_servico?.toString() ?? "");
+    setClienteId(tarefa?.cliente_id ?? 0);
+    setDataInicio(tarefa?.data_inicio?.toString() ?? "");
+    setDataFim(tarefa?.prazo_final?.toString() ?? "");
+    setObservacao(tarefa?.observacoes ?? "");
+    setValorTotalServico(tarefa?.valor_total_servico?.toString() ?? "");
+    setStatus(tarefa?.status ?? "");
   }, [tarefa]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!onSave) return;
+
+    // Validações
+    if (clienteId === 0) {
+      toast.error("Por favor, selecione um cliente");
+      return;
+    }
+
+    if (!tipoServico) {
+      toast.error("Por favor, selecione um tipo de serviço");
+      return;
+    }
+
+    if (!dataInicio) {
+      toast.error("Por favor, informe a data de início");
+      return;
+    }
+
+    if (!status) {
+      toast.error("Por favor, selecione um status");
+      return;
+    }
+    
     setSaving(true);
     setError(null);
-    onSave({
-      nome,
-      endereco,
-      numero: numero ? Number(numero) : null,
-      bairro,
-      razao_social,
-      telefone,
-      email,
-      contato_principal,
-      //   contato_secundario,
-      proposta_link,
-      cnpj,
-    });
-    toast.success("tarefa criado com sucesso!");
+    
+    try {
+      onSave({
+        tipo_servico: Number(tipoServico),
+        cliente_id: Number(clienteId),
+        data_inicio: new Date(dataInicio),
+        prazo_final: dataFim ? new Date(dataFim) : new Date(dataInicio),
+        observacoes: observacao,
+        valor_total_servico: valorTotalServico ? Number(valorTotalServico) : 0,
+        status: status as TarefaStatus,
+      });
+      toast.success("Tarefa criada com sucesso!");
+      setSaving(false);
+      onClose();
+      // Resetar formulário
+      setTipoServico("");
+      setClienteId(0);
+      setDataInicio("");
+      setDataFim("");
+      setObservacao("");
+      setValorTotalServico("");
+      setStatus("");
+    } catch (error) {
+      console.error("Erro ao salvar tarefa:", error);
+      toast.error("Erro ao salvar tarefa");
+      setSaving(false);
+    }
   };
 
   // Modal de cadastro de tarefa
   return (
-    <Dialog open onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-modal-light dark:bg-modal-dark">
         <DialogHeader>
           <DialogTitle>
@@ -85,85 +166,103 @@ export function ModalTarefa({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <FormInput
-              id="nome"
-              label="Nome"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
+          {tiposServico.length === 0 && !loadingTipos && (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <p className="text-sm text-yellow-800">
+                <strong>Atenção:</strong> Não há tipos de serviço cadastrados. 
+                É necessário cadastrar ao menos um tipo de serviço antes de criar tarefas.
+              </p>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 gap-4">
+            <ClienteSelect
+              value={clienteId}
+              onChange={handleClienteChange}
               required
             />
-            <FormInput
-              id="cnpj"
-              label="CNPJ"
-              value={cnpj}
-              onChange={(e) => setCnpj(e.target.value)}
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Tipo de Serviço</Label>
+              <Select value={tipoServico} onValueChange={setTipoServico}>
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingTipos ? "Carregando..." : "Selecione o tipo de serviço"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {tiposServico.length > 0 ? (
+                    tiposServico.map((tipo) => (
+                      <SelectItem key={tipo.id} value={tipo.id.toString()}>
+                        {tipo.nome}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>
+                      {loadingTipos ? "Carregando..." : "Nenhum tipo de serviço encontrado"}
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <FormInput 
+              label="Data de Início"
+              type="date"
+              value={dataInicio}
+              onChange={(e) => setDataInicio(e.target.value)}
               required
             />
-            <FormInput
-              id="telefone"
-              label="Telefone"
-              value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
+
+            <FormInput 
+              label="Data de Fim"
+              type="date"
+              value={dataFim}
+              onChange={(e) => setDataFim(e.target.value)}
               required
             />
-            <FormInput
-              id="email"
-              label="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+
+            <FormInput 
+              label="Observações"
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              placeholder="Digite observações sobre a tarefa..."
+            />
+
+            <FormInput 
+              label="Valor Total do Serviço"
+              type="number"
+              step="0.01"
+              value={valorTotalServico}
+              onChange={(e) => setValorTotalServico(e.target.value)}
               required
             />
-            <FormInput
-              id="endereco"
-              label="Endereço"
-              value={endereco}
-              onChange={(e) => setEndereco(e.target.value)}
-              required
-            />
-            <FormInput
-              id="numero"
-              label="Número"
-              value={numero}
-              onChange={(e) => setNumero(e.target.value)}
-              required
-            />
-            <FormInput
-              id="bairro"
-              label="Bairro"
-              value={bairro}
-              onChange={(e) => setBairro(e.target.value)}
-              required
-            />
-            <FormInput
-              id="razao_social"
-              label="Razão Social"
-              value={razao_social}
-              onChange={(e) => setRazaoSocial(e.target.value)}
-              required
-            />
-            <FormInput
-              id="contato_principal"
-              label="Contato Principal"
-              value={contato_principal}
-              onChange={(e) => setContatoPrincipal(e.target.value)}
-              required
-            />
-            <FormInput
-              id="proposta_link"
-              label="Link da Proposta"
-              value={proposta_link}
-              onChange={(e) => setPropostaLink(e.target.value)}
-            />
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Status</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Iniciado">Iniciado</SelectItem>
+                  <SelectItem value="Coleta_de_Informações">Coleta de Informações</SelectItem>
+                  <SelectItem value="Execucao">Execução</SelectItem>
+                  <SelectItem value="Aprovação_Cliente">Aprovação Cliente</SelectItem>
+                  <SelectItem value="Concluído">Concluído</SelectItem>
+                  <SelectItem value="Encerrado">Encerrado</SelectItem>
+                  <SelectItem value="Protocolado">Protocolado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
           <DialogFooter className="mt-4">
             <DialogClose asChild>
               <Button variant="outline" type="button" onClick={onClose}>
                 Cancelar
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={saving}>
-              Salvar
+            <Button type="submit" disabled={saving || loadingTipos || tiposServico.length === 0}>
+              {saving ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </form>

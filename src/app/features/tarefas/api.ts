@@ -1,19 +1,14 @@
-// src/features/clientes/api.ts
-// Funções que o frontend usa para interagir com as API Routes
-
 export type TarefaInput = {
-  tipo_servico: string
-  clienteId: string
-  numero?: number | null
-  bairro?: string | null
-  razao_social?: string | null
-  telefone: string
-  email: string
-  contato_principal: string
-  contato_secundario?: string | null
-  proposta_link?: string | null
-  cnpj: string
+  tipo_servico: number
+  cliente_id: number
+  data_inicio: Date
+  prazo_final: Date
+  observacoes: string
+  valor_total_servico: number
+  status: TarefaStatus
 }
+
+export type TarefaStatus = "Iniciado" | "Coleta_de_Informações" | "Execucao" | "Aprovação_Cliente" | "Concluído" | "Encerrado" | "Protocolado"
 
 export type Tarefa = TarefaInput & { id: number }
 

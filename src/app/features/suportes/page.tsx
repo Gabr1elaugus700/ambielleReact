@@ -92,7 +92,7 @@ export default function ClientesPage() {
     <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="space-y-6 p-4">
         <section className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold mb-4">Serviços</h1>
+        <h1 className="text-2xl font-bold mb-4">Suportes</h1>
         {/* Botão para abrir modal de cadastro */}
         <Button 
           onClick={() => setShowCreateModal(true)} 

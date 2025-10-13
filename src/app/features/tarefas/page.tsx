@@ -7,85 +7,143 @@ import { Filter, Plus, X } from "lucide-react";
 import { Atividade } from "@/types/atividade";
 import { AtividadeCard } from "./components/AtividadeCard";
 import { AtividadeModal } from "./components/AtividadeModal";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { ModalTarefa } from "./components/ModalCreateTarefa";
+import { TarefaInput } from "./api";
+import { toast } from "sonner";
+import { useTarefas } from "./hooks";
+import { Tarefa, TarefaStatus } from "./api";
 
-// Mock data baseado na imagem
-const mockAtividades: Atividade[] = [
-  {
-    id: "1",
-    empresa: "MEDIUM LNMPS",
-    tipo: "Licença Provisória",
-    prazo_final: "2024-01-25",
-    valor_sn: "SEM INFORMAÇÃO",
-    retencao: "CERTIFICADO ISS 07/2023 - 06/2024",
-    servico: "LICENÇA PROVISÓRIA",
-    status: "pendente",
-    cor: "laranja",
-  },
-  {
-    id: "2",
-    empresa: "FAZIM E CIA LTDA",
-    tipo: "Licença Provisória",
-    prazo_final: "2024-01-25",
-    valor_sn: "SEM INFORMAÇÃO",
-    retencao: "LICENÇA PROVISÓRIA",
-    servico: "NOTA FISCAL",
-    status: "em_andamento",
-    cor: "verde",
-  },
-  {
-    id: "3",
-    empresa: "ALI CHAN INDUSTRIA E COMERCIO LTDA",
-    tipo: "Renovação",
-    prazo_final: "2024-01-30",
-    valor_sn: "INFORMADO",
-    retencao: "SIMPLES NACIONAL",
-    servico: "LICENÇA PROVISÓRIA",
-    status: "em_andamento",
-    cor: "azul",
-  },
-  {
-    id: "4",
-    empresa: "TECH SOLUTIONS LTDA",
-    tipo: "Certificado",
-    prazo_final: "2024-02-01",
-    valor_sn: "INFORMADO",
-    retencao: "CERTIFICADO ISS 07/2023 - 06/2024",
-    servico: "LICENÇA SANITÁRIA",
-    status: "pendente",
-    cor: "roxo",
-  },
-  {
-    id: "5",
-    empresa: "COMERCIAL ABC",
-    tipo: "Licença",
-    prazo_final: "2024-01-28",
-    valor_sn: "INFORMADO",
-    retencao: "SIMPLES NACIONAL",
-    servico: "NOTA FISCAL",
-    status: "em_andamento",
-    cor: "amarelo",
-  },
-  {
-    id: "6",
-    empresa: "BRUNO LNMPS",
-    tipo: "Renovação",
-    prazo_final: "2024-02-05",
-    valor_sn: "INFORMADO",
-    retencao: "LICENÇA PROVISÓRIA",
-    servico: "NOTA FISCAL ESPECIAL",
-    status: "concluido",
-    cor: "vermelho",
-  },
-];
+// Tipos para API com relacionamentos
+type TarefaCompleta = Tarefa & {
+  cliente: { nome: string; razao_social?: string; };
+  tipoServico: { nome: string; orgao?: string; };
+};
+
+// Função para mapear status para cores
+const getCorPorStatus = (status: TarefaStatus): "laranja" | "verde" | "azul" | "amarelo" | "roxo" | "vermelho" => {
+  switch (status) {
+    case "Iniciado":
+      return "azul";
+    case "Coleta_de_Informações":
+      return "amarelo";
+    case "Execucao":
+      return "laranja";
+    case "Aprovação_Cliente":
+      return "roxo";
+    case "Concluído":
+      return "verde";
+    case "Encerrado":
+      return "vermelho";
+    case "Protocolado":
+      return "verde";
+    default:
+      return "azul";
+  }
+};
+
+// Função para mapear status da tarefa para status da atividade
+const mapearStatusParaAtividade = (statusTarefa: TarefaStatus): "pendente" | "em_andamento" | "concluido" => {
+  switch (statusTarefa) {
+    case "Iniciado":
+    case "Coleta_de_Informações":
+      return "pendente";
+    case "Execucao":
+    case "Aprovação_Cliente":
+      return "em_andamento";
+    case "Concluído":
+    case "Protocolado":
+      return "concluido";
+    case "Encerrado":
+      return "concluido";
+    default:
+      return "pendente";
+  }
+};
+
+// Função para converter Tarefa para Atividade (compatibilidade com o componente)
+const tarefaParaAtividade = (tarefa: TarefaCompleta): Atividade => {
+  const formatarData = (data: string | Date) => {
+    try {
+      if (!data) return "Não definido";
+      
+      // Se for string, criar Date object
+      const dataObj = typeof data === 'string' ? new Date(data) : data;
+      
+      // Verificar se a data é válida
+      if (isNaN(dataObj.getTime())) return "Data inválida";
+      
+      return dataObj.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric'
+      });
+    } catch {
+      return "Data inválida";
+    }
+  };
+
+  const formatarValor = (valor: number | string) => {
+    try {
+      const numericValue = typeof valor === 'string' ? parseFloat(valor) : valor;
+      if (isNaN(numericValue) || numericValue === 0) return "SEM INFORMAÇÃO";
+      return `R$ ${numericValue.toLocaleString('pt-BR', { 
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2 
+      })}`;
+    } catch {
+      return "SEM INFORMAÇÃO";
+    }
+  };
+
+  return {
+    id: tarefa.id.toString(),
+    empresa: tarefa.cliente?.nome || "Cliente não informado",
+    tipo: tarefa.tipoServico?.nome || "Tipo não informado",
+    prazo_final: formatarData(tarefa.prazo_final),
+    valor_sn: formatarValor(tarefa.valor_total_servico || 0),
+    retencao: tarefa.observacoes || "SEM OBSERVAÇÃO", 
+    servico: tarefa.status || "Status não informado", // Aqui colocamos o status real da tarefa
+    status: mapearStatusParaAtividade(tarefa.status),
+    cor: getCorPorStatus(tarefa.status),
+  };
+};
 
 export default function Page() {
-  const [selectedAtividade, setSelectedAtividade] = useState<Atividade | null>(null);
+  const { tarefas, isLoading, isError, create } = useTarefas();
+  const [selectedAtividade, setSelectedAtividade] = useState<Atividade | null>(
+    null
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [filtrosStatus, setFiltrosStatus] = useState<string[]>([]);
   const [filtrosTipo, setFiltrosTipo] = useState<string[]>([]);
+
+  // Converter tarefas para atividades
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const atividades: Atividade[] = (tarefas || []).map((tarefa: any) => tarefaParaAtividade(tarefa));
+
+  const [modalTarefaOpen, setModalTarefaOpen] = useState(false);
+
+  const handleTarefaClick = () => {
+    setModalTarefaOpen(true);
+  };
+
+  const handleSaveTarefa = async (data: TarefaInput) => {
+    try {
+      await create(data);
+      console.log("Salvando tarefa:", data);
+      setModalTarefaOpen(false);
+    } catch (error) {
+      console.error("Erro ao salvar tarefa:", error);
+      toast.error("Erro ao salvar tarefa");
+    }
+  };
 
   const handleAtividadeClick = (atividade: Atividade) => {
     setSelectedAtividade(atividade);
@@ -94,20 +152,22 @@ export default function Page() {
 
   // Funções de filtro
   const toggleFiltroStatus = (status: string) => {
-    setFiltrosStatus(prev =>
-      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+    setFiltrosStatus((prev) =>
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status]
     );
   };
   const toggleFiltroTipo = (tipo: string) => {
-    setFiltrosTipo(prev =>
-      prev.includes(tipo) ? prev.filter(t => t !== tipo) : [...prev, tipo]
+    setFiltrosTipo((prev) =>
+      prev.includes(tipo) ? prev.filter((t) => t !== tipo) : [...prev, tipo]
     );
   };
-  const removerFiltro = (tipo: 'status' | 'tipo', valor: string) => {
-    if (tipo === 'status') {
-      setFiltrosStatus(prev => prev.filter(s => s !== valor));
+  const removerFiltro = (tipo: "status" | "tipo", valor: string) => {
+    if (tipo === "status") {
+      setFiltrosStatus((prev) => prev.filter((s) => s !== valor));
     } else {
-      setFiltrosTipo(prev => prev.filter(t => t !== valor));
+      setFiltrosTipo((prev) => prev.filter((t) => t !== valor));
     }
   };
   const limparFiltros = () => {
@@ -115,26 +175,80 @@ export default function Page() {
     setFiltrosTipo([]);
   };
 
-  // Opções de filtro
-  const statusOptions = [
-    { value: "pendente", label: "Pendente" },
-    { value: "em_andamento", label: "Em Andamento" },
-    { value: "concluido", label: "Concluído" }
-  ];
-  const tipoOptions = [
-    { value: "Licença Provisória", label: "Licença Provisória" },
-    { value: "Renovação", label: "Renovação" },
-    { value: "Certificado", label: "Certificado" },
-    { value: "Licença", label: "Licença" }
-  ];
+  // Função para formatar o texto do status (mesma do AtividadeCard)
+  const formatarStatusTexto = (status: string) => {
+    switch (status) {
+      case "Coleta_de_Informações":
+        return "Coleta de Informações";
+      case "Execucao":
+        return "Execução";
+      case "Aprovação_Cliente":
+        return "Aprovação Cliente";
+      default:
+        return status;
+    }
+  };
+
+  // Opções de filtro baseadas nos status reais das tarefas
+  const statusReaisUnicos = [...new Set(atividades.map(a => a.servico))].filter(Boolean);
+  const statusOptions = statusReaisUnicos.map(status => ({
+    value: status,
+    label: formatarStatusTexto(status)
+  }));
+  
+  // Gerar opções de tipo baseado nas tarefas reais
+  const tiposUnicos = [...new Set(atividades.map(a => a.tipo))];
+  const tipoOptions = tiposUnicos.map(tipo => ({
+    value: tipo,
+    label: tipo
+  }));
   const temFiltrosAtivos = filtrosStatus.length > 0 || filtrosTipo.length > 0;
 
   // Filtragem das atividades
-  const atividadesFiltradas = mockAtividades.filter(atividade => {
-    const statusMatch = filtrosStatus.length === 0 || filtrosStatus.includes(atividade.status);
-    const tipoMatch = filtrosTipo.length === 0 || filtrosTipo.includes(atividade.tipo);
+  const atividadesFiltradas = atividades.filter((atividade) => {
+    const statusMatch =
+      filtrosStatus.length === 0 || filtrosStatus.includes(atividade.servico);
+    const tipoMatch =
+      filtrosTipo.length === 0 || filtrosTipo.includes(atividade.tipo);
     return statusMatch && tipoMatch;
   });
+
+  // Mostrar loading
+  if (isLoading) {
+    return (
+      <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Atividades</h1>
+              <p className="text-muted-foreground">Carregando tarefas...</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-48 bg-gray-200 animate-pulse rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Mostrar erro
+  if (isError) {
+    return (
+      <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Atividades</h1>
+              <p className="text-red-600">Erro ao carregar tarefas. Tente novamente.</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
@@ -142,16 +256,24 @@ export default function Page() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Atividades</h1>
-            <p className="text-muted-foreground">Gerencie todas as atividades</p>
+            <p className="text-muted-foreground">
+              Gerencie todas as atividades
+            </p>
           </div>
           <div className="flex gap-3">
             <Popover>
               <PopoverTrigger asChild className="bg-white">
-                <Button variant="outline" className="gap-2 px-2 py-1 text-xs rounded border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-amber-400 hover:text-black hover:border-black">
+                <Button
+                  variant="outline"
+                  className="gap-2 px-2 py-1 text-xs rounded border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-amber-400 hover:text-black hover:border-black"
+                >
                   <Filter className="h-4 w-4" />
                   Filtrar Atividades
                   {temFiltrosAtivos && (
-                    <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
+                    <Badge
+                      variant="secondary"
+                      className="ml-1 px-1.5 py-0 text-xs"
+                    >
                       {filtrosStatus.length + filtrosTipo.length}
                     </Badge>
                   )}
@@ -162,12 +284,17 @@ export default function Page() {
                   <div>
                     <h4 className="font-semibold mb-3 text-sm">Status</h4>
                     <div className="space-y-2">
-                      {statusOptions.map(option => (
-                        <div key={option.value} className="flex items-center gap-2">
+                      {statusOptions.map((option) => (
+                        <div
+                          key={option.value}
+                          className="flex items-center gap-2"
+                        >
                           <Checkbox
                             id={`status-${option.value}`}
                             checked={filtrosStatus.includes(option.value)}
-                            onCheckedChange={() => toggleFiltroStatus(option.value)}
+                            onCheckedChange={() =>
+                              toggleFiltroStatus(option.value)
+                            }
                           />
                           <Label
                             htmlFor={`status-${option.value}`}
@@ -182,12 +309,17 @@ export default function Page() {
                   <div>
                     <h4 className="font-semibold mb-3 text-sm">Tipo</h4>
                     <div className="space-y-2">
-                      {tipoOptions.map(option => (
-                        <div key={option.value} className="flex items-center gap-2">
+                      {tipoOptions.map((option) => (
+                        <div
+                          key={option.value}
+                          className="flex items-center gap-2"
+                        >
                           <Checkbox
                             id={`tipo-${option.value}`}
                             checked={filtrosTipo.includes(option.value)}
-                            onCheckedChange={() => toggleFiltroTipo(option.value)}
+                            onCheckedChange={() =>
+                              toggleFiltroTipo(option.value)
+                            }
                           />
                           <Label
                             htmlFor={`tipo-${option.value}`}
@@ -212,7 +344,11 @@ export default function Page() {
                 </div>
               </PopoverContent>
             </Popover>
-            <Button variant="outline" className="px-2 py-1 text-xs rounded border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black">
+            <Button
+              variant="outline"
+              className="px-2 py-1 text-xs rounded border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black"
+              onClick={handleTarefaClick}
+            >
               <Plus className="h-4 w-4" />
               Nova Tarefa
             </Button>
@@ -221,28 +357,34 @@ export default function Page() {
 
         {temFiltrosAtivos && (
           <div className="flex flex-wrap items-center gap-2 p-4 bg-muted/50 rounded-lg border">
-            <span className="text-sm font-medium text-muted-foreground">Filtros ativos:</span>
-            {filtrosStatus.map(status => (
-              <Badge key={status} variant="secondary" className="gap-1 pl-2 pr-1">
-                {statusOptions.find(s => s.value === status)?.label}
+            <span className="text-sm font-medium text-muted-foreground">
+              Filtros ativos:
+            </span>
+            {filtrosStatus.map((status) => (
+              <Badge
+                key={status}
+                variant="secondary"
+                className="gap-1 pl-2 pr-1"
+              >
+                {statusOptions.find((s) => s.value === status)?.label || status}
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={() => removerFiltro('status', status)}
+                  onClick={() => removerFiltro("status", status)}
                 >
                   <X className="h-3 w-3" />
                 </Button>
               </Badge>
             ))}
-            {filtrosTipo.map(tipo => (
+            {filtrosTipo.map((tipo) => (
               <Badge key={tipo} variant="secondary" className="gap-1 pl-2 pr-1">
                 {tipo}
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-4 w-4 p-0 hover:bg-transparent"
-                  onClick={() => removerFiltro('tipo', tipo)}
+                  onClick={() => removerFiltro("tipo", tipo)}
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -259,16 +401,46 @@ export default function Page() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {atividadesFiltradas.map((atividade) => (
-            <AtividadeCard
-              key={atividade.id}
-              atividade={atividade}
-              onClick={() => handleAtividadeClick(atividade)}
-            />
-          ))}
-        </div>
+        {atividadesFiltradas.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {atividadesFiltradas.map((atividade) => (
+              <AtividadeCard
+                key={atividade.id}
+                atividade={atividade}
+                onClick={() => handleAtividadeClick(atividade)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-700">
+                {atividades.length === 0 ? "Nenhuma tarefa encontrada" : "Nenhuma tarefa corresponde aos filtros"}
+              </h3>
+              <p className="text-gray-500 mt-2">
+                {atividades.length === 0 
+                  ? "Comece criando uma nova tarefa usando o botão 'Nova Tarefa'"
+                  : "Tente ajustar ou limpar os filtros para ver mais resultados"
+                }
+              </p>
+            </div>
+            {atividades.length === 0 && (
+              <Button 
+                onClick={handleTarefaClick}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Primeira Tarefa
+              </Button>
+            )}
+          </div>
+        )}
 
+        <ModalTarefa
+          open={modalTarefaOpen}
+          onClose={() => setModalTarefaOpen(false)}
+          onSave={handleSaveTarefa}
+        />
         <AtividadeModal
           atividade={selectedAtividade}
           open={modalOpen}
