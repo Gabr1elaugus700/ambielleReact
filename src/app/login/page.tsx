@@ -20,7 +20,7 @@ export default function LoginPage() {
     const data = await res.json();
     if (res.ok && data.token) {
       localStorage.setItem("token", data.token);
-      router.push("/");
+      router.push("/home");
     } else {
       setError(data.error || "Erro ao logar");
     }
@@ -47,7 +47,7 @@ export default function LoginPage() {
           required
         />
         {error && <p className="text-red-500 text-sm">{error}</p>}
-        <Button type="submit" className="w-full">Entrar</Button>
+        <Button type="submit" variant="outline" className="px-2 py-1 text-xs rounded w-full border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black">Entrar</Button>
       </form>
     </main>
   );
