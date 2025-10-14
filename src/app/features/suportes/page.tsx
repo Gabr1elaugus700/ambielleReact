@@ -20,7 +20,11 @@ import { Column } from "@/types/types"
 
 // Definição das colunas da tabela de clientes
 const columns: Column<Suporte>[] = [
-  { key: "cliente_id", header: "Cliente" },
+  { 
+    key: "cliente", 
+    header: "Cliente",
+    render: (value, row) => row.cliente?.nome || 'Cliente não encontrado'
+  },
   { key: "descricao", header: "Descrição" },
   { 
     key: "valor_hora", 

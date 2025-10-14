@@ -10,7 +10,13 @@ export type SuporteInput = {
   valor_total: number
 }
 
-export type Suporte = SuporteInput & { id: number }
+export type Suporte = SuporteInput & { 
+  id: number;
+  cliente?: { 
+    id: number;
+    nome: string;
+  };
+}
 
 const BASE_URL = "/api/suporte" 
 
