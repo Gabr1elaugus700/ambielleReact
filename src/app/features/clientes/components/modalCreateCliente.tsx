@@ -79,6 +79,22 @@ export function ModalCliente({
   const [email, setEmail] = useState(cliente?.email ?? "");
   const [contato_principal, setContatoPrincipal] = useState(cliente?.contato_principal ?? "");
   const [proposta_link, setPropostaLink] = useState(cliente?.proposta_link ?? "");
+  // Garante que o valor inicial seja no formato yyyy-MM-dd para o input type=date
+  const formatDateInput = (dateStr?: string) => {
+    if (!dateStr) return "";
+    // Aceita tanto ISO quanto dd/mm/yyyy
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    // Se vier dd/mm/yyyy, converte para yyyy-MM-dd
+    const [d, m, y] = dateStr.split("/");
+    if (d && m && y) return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    return "";
+  };
+  const [data_cadastro, setDataCadastro] = useState(
+    cliente?.data_cadastro ? formatDateInput(cliente.data_cadastro) : ""
+  );
+
+  // Supondo que data_cadastro seja "2025-10-06"
+const dataCadastroISO = data_cadastro ? new Date(data_cadastro).toISOString() : undefined;
   const [cnpj, setCnpj] = useState(cliente?.cnpj ?? "");
   const [cnpjFormatado, setCnpjFormatado] = useState(
     cliente?.cnpj ? formatarCNPJ(cliente.cnpj) : ""
@@ -121,6 +137,7 @@ export function ModalCliente({
     setEmail(cliente?.email ?? "");
     setContatoPrincipal(cliente?.contato_principal ?? "");
     setPropostaLink(cliente?.proposta_link ?? "");
+    setDataCadastro(cliente?.data_cadastro ? formatDateInput(cliente.data_cadastro) : "");
     setCnpj(cliente?.cnpj ?? "");
     setCnpjFormatado(cliente?.cnpj ? formatarCNPJ(cliente.cnpj) : "");
   }, [cliente]);
@@ -141,6 +158,7 @@ export function ModalCliente({
       //   contato_secundario,
       proposta_link,
       cnpj,
+      data_cadastro: dataCadastroISO,
     });
     toast.success("Cliente criado com sucesso!");
   };
@@ -223,6 +241,14 @@ export function ModalCliente({
               value={contato_principal}
               onChange={(e) => setContatoPrincipal(e.target.value)}
               required
+            />
+            <FormInput
+              id="data_cadastro"
+              label="Data de Cadastro"
+              value={data_cadastro}
+              onChange={(e) => setDataCadastro(e.target.value)}
+              required
+              type="date"
             />
             <FormInput
               id="proposta_link"

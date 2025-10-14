@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Column } from "@/types/types"
+import { Column } from "@/types/types";
 
 // Funções de formatação para exibição na tabela
 const formatarCNPJ = (cnpj: string) => {
@@ -46,23 +46,43 @@ const formatarTelefone = (telefone: string) => {
   }
 };
 
+// Função para formatar data para dd/mm/yyyy
+const formatarData = (dataStr: string | null | undefined) => {
+  if (!dataStr) return "";
+  // Aceita ISO ou yyyy-MM-dd
+  const d = new Date(dataStr);
+  if (isNaN(d.getTime())) return dataStr; // Se não for data válida, retorna original
+  const dia = String(d.getDate()).padStart(2, "0");
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const ano = d.getFullYear();
+  return `${dia}/${mes}/${ano}`;
+};
+
 // Definição das colunas da tabela de clientes
 const columns: Column<Cliente>[] = [
   { key: "nome", header: "Nome" },
   { key: "razao_social", header: "Razão Social" },
-  { 
-    key: "cnpj", 
+  {
+    key: "cnpj",
     header: "CNPJ",
-    render: (value: string | number | null | undefined) => formatarCNPJ(String(value || ""))
+    render: (value: string | number | null | undefined) =>
+      formatarCNPJ(String(value || "")),
   },
-  { 
-    key: "telefone", 
+  {
+    key: "telefone",
     header: "Telefone",
-    render: (value: string | number | null | undefined) => formatarTelefone(String(value || ""))
+    render: (value: string | number | null | undefined) =>
+      formatarTelefone(String(value || "")),
   },
   { key: "email", header: "Email" },
   { key: "endereco", header: "Endereço" },
   { key: "contato_principal", header: "Contato Principal" },
+  {
+    key: "data_cadastro",
+    header: "Data de Cadastro",
+    render: (value: string | number | null | undefined) =>
+      formatarData(String(value || "")),
+  },
 ];
 
 export default function ClientesPage() {
@@ -78,7 +98,7 @@ export default function ClientesPage() {
   // Função editar cliente
   async function handleEditCliente(row: Cliente) {
     setClienteToEdit(row);
-    setModalEditCliente(true); 
+    setModalEditCliente(true);
   }
 
   // Excluir cliente
@@ -119,21 +139,21 @@ export default function ClientesPage() {
     }
   };
 
-  console.log(clientes)
+  console.log(clientes);
   // Renderização principal da página
   return (
     <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="space-y-6 p-4">
         <section className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold mb-4">Clientes</h1>
-        {/* Botão para abrir modal de cadastro */}
-        <Button 
-          onClick={() => setShowCreateModal(true)} 
-          className="px-2 py-1 text-sm font-medium rounded border border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black"
-          variant={"outline"}
+          <h1 className="text-2xl font-bold mb-4">Clientes</h1>
+          {/* Botão para abrir modal de cadastro */}
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="px-2 py-1 text-sm font-medium rounded border border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black"
+            variant={"outline"}
           >
-          <PlusIcon className="mr-2" /> Novo Cliente
-        </Button>
+            <PlusIcon className="mr-2" /> Novo Cliente
+          </Button>
         </section>
 
         {/* Tabela de clientes */}

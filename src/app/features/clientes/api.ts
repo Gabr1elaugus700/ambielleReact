@@ -13,6 +13,7 @@ export type ClienteInput = {
   contato_secundario?: string | null
   proposta_link?: string | null
   cnpj: string
+  data_cadastro?: string 
 }
 
 export type Cliente = ClienteInput & { id: number }

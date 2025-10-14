@@ -39,7 +39,7 @@ model Cliente {
   contato_secundario String?
   proposta_link      String? // URLField
   cnpj               String // CharField(15)
-
+  data_cadastro     DateTime @default(now())
   // Relações
   tarefas    Tarefa[]
   suportes   Suporte[]

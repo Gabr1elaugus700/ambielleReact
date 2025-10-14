@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "cliente" ADD COLUMN     "data_cadastro" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
