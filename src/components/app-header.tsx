@@ -1,7 +1,8 @@
 
-'use client'
-
+"use client";
 import React from "react";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,6 +20,11 @@ const navLinks = [
 ];
 
 export function AppHeader() {
+  const pathname = usePathname();
+  useAuthGuard();
+  if (pathname === "/login" || pathname === "/register") {
+    return null;
+  }
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20 w-full">
       <div className="flex items-center h-16 px-6 w-full">

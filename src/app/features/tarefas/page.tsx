@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+  
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Filter, Plus, X } from "lucide-react";
@@ -117,6 +119,7 @@ const tarefaParaAtividade = (tarefa: TarefaCompleta): Atividade => {
 };
 
 export default function Page() {
+  useAuthGuard();
   const { tarefas, isLoading, isError, create, update } = useTarefas();
   const [selectedAtividade, setSelectedAtividade] = useState<Atividade | null>(
     null

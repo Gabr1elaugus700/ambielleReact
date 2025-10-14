@@ -9,6 +9,15 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+    // login     String   @unique
+}
+
 enum TarefaStatus {
   Iniciado
   Coleta_De_Informações // "Coleta de Informações" -> sem espaço, com underscore; acentos são permitidos mas evite em código
@@ -27,7 +36,7 @@ enum TipoRelatorio {
 // Tabelas / Models
 
 model Cliente {
-  id                 Int     @id @default(autoincrement())
+  id                 Int         @id @default(autoincrement())
   nome               String
   endereco           String
   numero             Int? // null=True
@@ -39,12 +48,12 @@ model Cliente {
   contato_secundario String?
   proposta_link      String? // URLField
   cnpj               String // CharField(15)
-  data_cadastro     DateTime @default(now())
+  data_cadastro      DateTime    @default(now())
   // Relações
-  tarefas    Tarefa[]
-  suportes   Suporte[]
-  relatorios Relatorio[]
-  licencas   Licenca[]
+  tarefas            Tarefa[]
+  suportes           Suporte[]
+  relatorios         Relatorio[]
+  licencas           Licenca[]
 
   @@map("cliente")
 }

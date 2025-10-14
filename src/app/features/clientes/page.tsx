@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PlusIcon } from "lucide-react";
@@ -86,6 +87,7 @@ const columns: Column<Cliente>[] = [
 ];
 
 export default function ClientesPage() {
+  useAuthGuard();
   const { clientes, isLoading, isError, create, update, remove } =
     useClientes();
   const [showCreateModal, setShowCreateModal] = useState(false);
