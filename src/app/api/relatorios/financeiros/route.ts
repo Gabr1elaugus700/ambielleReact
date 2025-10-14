@@ -1,8 +1,6 @@
 import type { NextRequest } from 'next/server'
 import puppeteer from 'puppeteer'
 import prisma from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
-
 export const runtime = 'nodejs'
 
 // Tipos para os filtros do Prisma

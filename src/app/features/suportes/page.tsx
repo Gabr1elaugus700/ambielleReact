@@ -22,12 +22,36 @@ import { Column } from "@/types/types"
 const columns: Column<Suporte>[] = [
   { key: "cliente_id", header: "Cliente" },
   { key: "descricao", header: "Descrição" },
-  { key: "valor_hora", header: "Valor Hora" },
-  { key: "data_suporte", header: "Data do Suporte" },
-  { key: "hora_inicio", header: "Hora Início" },
-  { key: "hora_fim", header: "Hora Fim" },
-  { key: "tempo_suporte", header: "Tempo Suporte (min)" },
-  { key: "valor_total", header: "Valor Total" },
+  { 
+    key: "valor_hora", 
+    header: "Valor Hora",
+    render: (value, row) => `R$ ${Number(row.valor_hora).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+  },
+  { 
+    key: "data_suporte", 
+    header: "Data do Suporte",
+    render: (value, row) => new Date(row.data_suporte).toLocaleDateString('pt-BR')
+  },
+  { 
+    key: "hora_inicio", 
+    header: "Hora Início",
+    render: (value, row) => new Date(row.hora_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  },
+  { 
+    key: "hora_fim", 
+    header: "Hora Fim",
+    render: (value, row) => row.hora_fim ? new Date(row.hora_fim).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-'
+  },
+  { 
+    key: "tempo_suporte", 
+    header: "Tempo Suporte",
+    render: (value, row) => row.tempo_suporte ? `${Number(row.tempo_suporte).toFixed(0)} min` : '-'
+  },
+  { 
+    key: "valor_total", 
+    header: "Valor Total",
+    render: (value, row) => `R$ ${Number(row.valor_total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+  },
 ];
 
 export default function ClientesPage() {
