@@ -40,7 +40,12 @@ type ModalTarefaProps = {
   tarefa?: TarefaInput;
 };
 
-export function ModalTarefa({ open, onClose, onSave, tarefa }: ModalTarefaProps) {
+export function ModalTarefa({
+  open,
+  onClose,
+  onSave,
+  tarefa,
+}: ModalTarefaProps) {
   const [tipoServico, setTipoServico] = useState(
     tarefa?.tipo_servico?.toString() ?? ""
   );
@@ -68,7 +73,7 @@ export function ModalTarefa({ open, onClose, onSave, tarefa }: ModalTarefaProps)
     const loadTiposServico = async () => {
       setLoadingTipos(true);
       try {
-        const response = await fetch('/api/tipos-servico');
+        const response = await fetch("/api/tipos-servico");
         if (response.ok) {
           const data = await response.json();
           setTiposServico(data);
@@ -98,7 +103,7 @@ export function ModalTarefa({ open, onClose, onSave, tarefa }: ModalTarefaProps)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!onSave) return;
 
     // Validações
@@ -121,10 +126,10 @@ export function ModalTarefa({ open, onClose, onSave, tarefa }: ModalTarefaProps)
       toast.error("Por favor, selecione um status");
       return;
     }
-    
+
     setSaving(true);
     setError(null);
-    
+
     try {
       onSave({
         tipo_servico: Number(tipoServico),
@@ -169,26 +174,33 @@ export function ModalTarefa({ open, onClose, onSave, tarefa }: ModalTarefaProps)
           {tiposServico.length === 0 && !loadingTipos && (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
               <p className="text-sm text-yellow-800">
-                <strong>Atenção:</strong> Não há tipos de serviço cadastrados. 
-                É necessário cadastrar ao menos um tipo de serviço antes de criar tarefas.
+                <strong>Atenção:</strong> Não há tipos de serviço cadastrados. É
+                necessário cadastrar ao menos um tipo de serviço antes de criar
+                tarefas.
               </p>
             </div>
           )}
-          
+
           <div className="grid grid-cols-1 gap-4">
             <ClienteSelect
               value={clienteId}
               onChange={handleClienteChange}
               required
             />
-            
+
             <div className="space-y-2">
               <Label className="text-sm font-medium">Tipo de Serviço</Label>
               <Select value={tipoServico} onValueChange={setTipoServico}>
                 <SelectTrigger>
-                  <SelectValue placeholder={loadingTipos ? "Carregando..." : "Selecione o tipo de serviço"} />
+                  <SelectValue
+                    placeholder={
+                      loadingTipos
+                        ? "Carregando..."
+                        : "Selecione o tipo de serviço"
+                    }
+                  />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60 overflow-y-auto bg-white dark:bg-gray-800">
                   {tiposServico.length > 0 ? (
                     tiposServico.map((tipo) => (
                       <SelectItem key={tipo.id} value={tipo.id.toString()}>
@@ -197,14 +209,16 @@ export function ModalTarefa({ open, onClose, onSave, tarefa }: ModalTarefaProps)
                     ))
                   ) : (
                     <SelectItem value="" disabled>
-                      {loadingTipos ? "Carregando..." : "Nenhum tipo de serviço encontrado"}
+                      {loadingTipos
+                        ? "Carregando..."
+                        : "Nenhum tipo de serviço encontrado"}
                     </SelectItem>
                   )}
                 </SelectContent>
               </Select>
             </div>
 
-            <FormInput 
+            <FormInput
               label="Data de Início"
               type="date"
               value={dataInicio}
@@ -212,7 +226,7 @@ export function ModalTarefa({ open, onClose, onSave, tarefa }: ModalTarefaProps)
               required
             />
 
-            <FormInput 
+            <FormInput
               label="Data de Fim"
               type="date"
               value={dataFim}
@@ -220,14 +234,14 @@ export function ModalTarefa({ open, onClose, onSave, tarefa }: ModalTarefaProps)
               required
             />
 
-            <FormInput 
+            <FormInput
               label="Observações"
               value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
               placeholder="Digite observações sobre a tarefa..."
             />
 
-            <FormInput 
+            <FormInput
               label="Valor Total do Serviço"
               type="number"
               step="0.01"
@@ -242,11 +256,15 @@ export function ModalTarefa({ open, onClose, onSave, tarefa }: ModalTarefaProps)
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60 overflow-y-auto bg-white dark:bg-gray-800">
                   <SelectItem value="Iniciado">Iniciado</SelectItem>
-                  <SelectItem value="Coleta_de_Informações">Coleta de Informações</SelectItem>
+                  <SelectItem value="Coleta_de_Informações">
+                    Coleta de Informações
+                  </SelectItem>
                   <SelectItem value="Execucao">Execução</SelectItem>
-                  <SelectItem value="Aprovação_Cliente">Aprovação Cliente</SelectItem>
+                  <SelectItem value="Aprovação_Cliente">
+                    Aprovação Cliente
+                  </SelectItem>
                   <SelectItem value="Concluído">Concluído</SelectItem>
                   <SelectItem value="Encerrado">Encerrado</SelectItem>
                   <SelectItem value="Protocolado">Protocolado</SelectItem>
@@ -257,11 +275,21 @@ export function ModalTarefa({ open, onClose, onSave, tarefa }: ModalTarefaProps)
 
           <DialogFooter className="mt-4">
             <DialogClose asChild>
-              <Button variant="outline" type="button" onClick={onClose}>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={onClose}
+                className="px-2 py-1 w-28 text-sm font-medium rounded border border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-red-400 hover:text-black hover:border-black"
+              >
                 Cancelar
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={saving || loadingTipos || tiposServico.length === 0}>
+            <Button
+              type="submit"
+              disabled={saving || loadingTipos || tiposServico.length === 0}
+              variant="outline"
+              className="px-2 py-1 w-28 text-sm font-medium rounded border border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black"
+            >
               {saving ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>

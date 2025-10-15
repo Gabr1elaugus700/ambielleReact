@@ -174,7 +174,7 @@ export function ModalSuportes({
                 variant="outline"
                 type="button"
                 onClick={onClose}
-                className="px-2 py-1 text-sm font-medium rounded border border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-red-400 hover:text-black hover:border-black"
+                className="px-2 w-28 py-1 text-sm font-medium rounded border border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-red-400 hover:text-black hover:border-black"
               >
                 Cancelar
               </Button>
@@ -183,7 +183,7 @@ export function ModalSuportes({
               variant="outline"
               type="button"
               disabled={saving}
-              className="px-2 py-1 text-sm font-medium rounded border border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black"
+              className="px-2 w-28 py-1 text-sm font-medium rounded border border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black"
             >
               Salvar
             </Button>

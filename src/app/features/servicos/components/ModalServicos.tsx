@@ -96,6 +96,7 @@ export function ModalServicos({
             <Button
               type="submit"
               disabled={saving}
+              variant={"outline"}
               className="px-2 py-1 text-sm font-medium rounded border border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black"
             >
               Salvar

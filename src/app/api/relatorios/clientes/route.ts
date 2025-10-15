@@ -1,12 +1,14 @@
 import type { NextRequest } from 'next/server'
 import puppeteer from 'puppeteer'
 import prisma from '@/lib/prisma'
+import { formatarCNPJ, formatarTelefone, formatarData  } from "@/lib/formatters";
+
 
 // Garanta que essa rota rode no runtime Node.js (não Edge)
 export const runtime = 'nodejs'
 
 // Exemplo de dados (substitua por busca no banco/Prisma se quiser)
-type Cliente = { nome: string; cnpj: string; telefone: string | null; email: string | null }
+type Cliente = { nome: string; cnpj: string; telefone: string | null; email: string | null, data_cadastro: Date | null }
 
 function escapeHtml(text?: string | null) {
   if (!text) return '—'
@@ -18,7 +20,7 @@ function escapeHtml(text?: string | null) {
     .replace(/'/g, '&#039;')
 }
 
-function buildHtml(clientes: Cliente[]) {
+function buildHtml(clientes: Cliente[], filtros: { dataInicial: string | null, dataFinal: string | null }) {
   return `<!DOCTYPE html>
 <html>
   <head>
@@ -36,7 +38,12 @@ function buildHtml(clientes: Cliente[]) {
   </head>
   <body>
     <h1>Relatório de Clientes</h1>
-    <div class="meta">Total de registros: ${clientes.length}</div>
+    <div class="meta">
+      ${filtros.dataInicial || filtros.dataFinal ? 
+        `Período: ${filtros.dataInicial ? formatarData(filtros.dataInicial) : 'início'} até ${filtros.dataFinal ? formatarData(filtros.dataFinal) : 'hoje'}<br>` 
+        : ''}
+      Total de registros: ${clientes.length}
+    </div>
     <table>
       <thead>
         <tr>
@@ -44,15 +51,17 @@ function buildHtml(clientes: Cliente[]) {
           <th>CNPJ</th>
           <th>Telefone</th>
           <th>Email</th>
+          <th>Data Cadastro</th>
         </tr>
       </thead>
       <tbody>
         ${clientes.map(c => `
           <tr>
             <td>${escapeHtml(c.nome)}</td>
-            <td>${escapeHtml(c.cnpj)}</td>
-            <td>${escapeHtml(c.telefone)}</td>
+            <td>${escapeHtml(formatarCNPJ(c.cnpj))}</td>
+            <td>${escapeHtml(formatarTelefone(c.telefone ?? ""))}</td>
             <td>${escapeHtml(c.email)}</td>
+            <td>${escapeHtml(formatarData(c.data_cadastro ? c.data_cadastro.toISOString() : null))}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -62,15 +71,30 @@ function buildHtml(clientes: Cliente[]) {
 }
 
 export async function GET(req: NextRequest) {
-  // 1) Obter dados
-  // Exemplo fixo; troque por sua query do Prisma:
-  // const clientes = await prisma.cliente.findMany({ orderBy: { id: 'desc' }, take: 200 })
-  const clientes = await prisma.cliente.findMany({
-  orderBy: { id: 'desc' },
-  take: 200,
-})
+  // 1) Obter parâmetros de filtro da URL
+  const searchParams = req.nextUrl.searchParams;
+  const dataInicial = searchParams.get('dataInicial');
+  const dataFinal = searchParams.get('dataFinal');
 
-    const html = buildHtml(clientes)
+  // 2) Construir where clause do Prisma
+  let where = {};
+  if (dataInicial || dataFinal) {
+    where = {
+      data_cadastro: {
+        ...(dataInicial && { gte: new Date(dataInicial) }),
+        ...(dataFinal && { lte: new Date(dataFinal + 'T23:59:59.999Z') }) // Inclui todo o dia final
+      }
+    };
+  }
+
+  // 3) Obter dados com filtros
+  const clientes = await prisma.cliente.findMany({
+    where,
+    orderBy: { id: 'desc' },
+    take: 200,
+  })
+
+    const html = buildHtml(clientes, { dataInicial, dataFinal })
     console.log('HTML gerado para PDF:', html)
 
   // 2) Iniciar Chromium compatível com Vercel

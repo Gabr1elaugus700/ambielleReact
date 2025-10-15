@@ -147,7 +147,7 @@ export default function ClientesPage() {
         )}
 
         {modalEditServico && suporteToEdit && (
-          <ModalEditCliente
+          <ModalEditSuporte
             row={suporteToEdit}
             onClose={() => {
               setmodalEditServico(false);
@@ -164,7 +164,7 @@ export default function ClientesPage() {
         )}
 
         {showDeleteModal && suporteToDelete && (
-          <ModalExcluirCliente
+          <ModalExcluirSuporte
             row={suporteToDelete}
             onClose={() => {
               setShowDeleteModal(false);
@@ -178,8 +178,7 @@ export default function ClientesPage() {
   );
 }
 
-// ModalEditCliente agora recebe onSave
-function ModalEditCliente({
+function ModalEditSuporte({
   row,
   onClose,
   onSave,
@@ -191,7 +190,7 @@ function ModalEditCliente({
   return <ModalSuportes onClose={onClose} onSave={onSave} suporte={row} />;
 }
 
-function ModalExcluirCliente({
+function ModalExcluirSuporte({
   row,
   onClose,
   onDelete,

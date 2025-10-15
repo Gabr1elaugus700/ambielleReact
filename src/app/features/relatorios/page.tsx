@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { TarefasFiltros, SuporteFiltros, FinanceiroFiltros, ClientesFiltros } from "./types";
 import {
   Card,
   CardContent,
@@ -9,10 +10,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { RelatorioClientes } from "./components/relatorio-clientes";
+import { RelatorioTarefas } from "./components/relatorio-tarefas";
+import { RelatorioSuportes } from "./components/relatorio-suportes";
+import { RelatorioFinanceiro } from "./components/relatorio-financeiro";
+import { ModalFiltrosTarefas } from "./components/modais/modal-filtros-tarefas";
+import { ModalFiltrosSuportes } from "./components/modais/modal-filtros-suportes";
+import { ModalFiltrosFinanceiro } from "./components/modais/modal-filtros-financeiro";
+import { ModalFiltrosClientes } from "./components/modais/modal-filtros-clientes";
 import {
   FileDown,
   FileSpreadsheet,
-  FileText,
   DollarSign,
   Users,
   Headphones,
@@ -57,31 +65,87 @@ const reports: ReportType[] = [
     icon: ClipboardList,
     color: "text-status-iniciado",
   },
-  {
-    id: "atividades",
-    title: "Relatório de Atividades",
-    description: "Atividades realizadas e prazos cumpridos",
-    icon: FileText,
-    color: "text-status-protocolado",
-  },
 ];
 
 export default function Relatorios() {
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
+  const [modalAberto, setModalAberto] = useState<string | null>(null);
+  
+  // Usar os hooks dos relatórios
+  const relatorioClientes = RelatorioClientes();
+  const relatorioTarefas = RelatorioTarefas();
+  const relatorioSuportes = RelatorioSuportes();
+  const relatorioFinanceiro = RelatorioFinanceiro();
 
   const handleExport = async (reportId: string, format: "pdf" | "excel") => {
+    // Se o relatório precisa de filtros, abre o modal correspondente
+    if (['financeiro', 'suporte', 'tarefas', 'clientes'].includes(reportId)) {
+      setModalAberto(reportId);
+      return;
+    }
+
+    // Para relatórios sem filtros, exporta diretamente
     setLoading(`${reportId}-${format}`);
 
-    // Simular exportação
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      if (reportId === 'clientes') {
+        await relatorioClientes.exportar(format);
+      }
 
-    toast({
-      title: "Relatório exportado com sucesso!",
-      description: `O relatório foi exportado em formato ${format.toUpperCase()}.`,
-    });
+      toast({
+        title: "Relatório exportado com sucesso!",
+        description: `O relatório foi exportado em formato ${format.toUpperCase()}.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Erro ao exportar relatório" + err,
+        description: "Ocorreu um erro ao gerar o relatório. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(null);
+    }
+  };
 
-    setLoading(null);
+  // Funções para lidar com a exportação com filtros
+  const handleExportComFiltros = async (
+    reportId: string, 
+    format: "pdf" | "excel", 
+    filtros: TarefasFiltros | SuporteFiltros | FinanceiroFiltros | ClientesFiltros
+  ) => {
+    setLoading(`${reportId}-${format}`);
+
+    try {
+      switch (reportId) {
+        case 'financeiro':
+          await relatorioFinanceiro.exportar(format, filtros as FinanceiroFiltros);
+          break;
+        case 'suporte':
+          await relatorioSuportes.exportar(format, filtros as SuporteFiltros);
+          break;
+        case 'tarefas':
+          await relatorioTarefas.exportar(format, filtros as TarefasFiltros);
+          break;
+        case 'clientes':
+          await relatorioClientes.exportar(format, filtros as ClientesFiltros);
+          break;
+      }
+
+      toast({
+        title: "Relatório exportado com sucesso!",
+        description: `O relatório foi exportado em formato ${format.toUpperCase()}.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Erro ao exportar relatório" + err,
+        description: "Ocorreu um erro ao gerar o relatório. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(null);
+      setModalAberto(null);
+    }
   };
 
   return (
@@ -141,6 +205,31 @@ export default function Relatorios() {
           })}
         </div>
       </div>
+
+      {/* Modais de Filtros */}
+      <ModalFiltrosFinanceiro 
+        open={modalAberto === 'financeiro'}
+        onClose={() => setModalAberto(null)}
+        onExport={(format, filtros) => handleExportComFiltros('financeiro', format, filtros)}
+      />
+
+      <ModalFiltrosSuportes
+        open={modalAberto === 'suporte'}
+        onClose={() => setModalAberto(null)}
+        onExport={(format, filtros) => handleExportComFiltros('suporte', format, filtros)}
+      />
+
+      <ModalFiltrosTarefas
+        open={modalAberto === 'tarefas'}
+        onClose={() => setModalAberto(null)}
+        onExport={(format, filtros) => handleExportComFiltros('tarefas', format, filtros)}
+      />
+
+      <ModalFiltrosClientes
+        open={modalAberto === 'clientes'}
+        onClose={() => setModalAberto(null)}
+        onExport={(format, filtros) => handleExportComFiltros('clientes', format, filtros)}
+      />
     </main>
   );
 }
