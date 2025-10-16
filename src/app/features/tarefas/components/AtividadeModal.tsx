@@ -80,7 +80,7 @@ export function AtividadeModal({ atividade, open, onOpenChange, onUpdate }: Ativ
 
   const statusOptions = [
     { value: "Iniciado", label: "Iniciado" },
-    { value: "Coleta_de_Informações", label: "Coleta de Informações" },
+    { value: "Coleta_De_Informações", label: "Coleta de Informações" },
     { value: "Execucao", label: "Execução" },
     { value: "Aprovação_Cliente", label: "Aprovação Cliente" },
     { value: "Concluído", label: "Concluído" },

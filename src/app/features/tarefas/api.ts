@@ -8,7 +8,7 @@ export type TarefaInput = {
   status: TarefaStatus
 }
 
-export type TarefaStatus = "Iniciado" | "Coleta_de_Informações" | "Execucao" | "Aprovação_Cliente" | "Concluído" | "Encerrado" | "Protocolado"
+export type TarefaStatus = "Iniciado" | "Coleta_De_Informações" | "Execucao" | "Aprovação_Cliente" | "Concluído" | "Encerrado" | "Protocolado"
 
 export type Tarefa = TarefaInput & { id: number }
 

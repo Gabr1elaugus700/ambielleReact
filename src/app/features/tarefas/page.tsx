@@ -33,7 +33,7 @@ const getCorPorStatus = (status: TarefaStatus): "laranja" | "verde" | "azul" | "
   switch (status) {
     case "Iniciado":
       return "azul";
-    case "Coleta_de_Informações":
+    case "Coleta_De_Informações":
       return "amarelo";
     case "Execucao":
       return "laranja";
@@ -54,7 +54,7 @@ const getCorPorStatus = (status: TarefaStatus): "laranja" | "verde" | "azul" | "
 const mapearStatusParaAtividade = (statusTarefa: TarefaStatus): "pendente" | "em_andamento" | "concluido" => {
   switch (statusTarefa) {
     case "Iniciado":
-    case "Coleta_de_Informações":
+    case "Coleta_De_Informações":
       return "pendente";
     case "Execucao":
     case "Aprovação_Cliente":
