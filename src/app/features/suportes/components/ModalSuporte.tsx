@@ -33,7 +33,7 @@ export function ModalSuportes({
   const [descricao, setDescricao] = useState(suporte?.descricao || "");
   const [valor_hora, setValor_hora] = useState(suporte?.valor_hora || 0);
   const [data_suporte, setData_suporte] = useState(
-    suporte?.data_suporte || new Date()
+    suporte?.data_suporte ? new Date(suporte.data_suporte) : new Date()
   );
   const [hora_inicio, setHora_inicio] = useState(
     suporte?.hora_inicio ? new Date(suporte.hora_inicio).toTimeString().substring(0,5) : ""
@@ -49,23 +49,30 @@ export function ModalSuportes({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
-  // Função para calcular tempo de suporte em horas
+  // Função para calcular tempo de suporte em minutos
   const calcularTempoSuporte = (inicio: string, fim: string): number => {
     if (!inicio || !fim) return 0;
     
     const [horaInicio, minutoInicio] = inicio.split(':').map(Number);
     const [horaFim, minutoFim] = fim.split(':').map(Number);
     
-    const inicioMinutos = horaInicio * 60 + minutoInicio;
-    const fimMinutos = horaFim * 60 + minutoFim;
+    const minutosInicio = horaInicio * 60 + minutoInicio;
+    const minutosFim = horaFim * 60 + minutoFim;
+
+    let diferenca = minutosFim - minutosInicio;
     
-    const diferencaMinutos = fimMinutos - inicioMinutos;
-    return Math.max(0, diferencaMinutos / 60); // Retorna em horas
+    // Se a diferença for negativa, significa que passou da meia-noite
+    if (diferenca < 0) {
+      diferenca += 24 * 60; // Adiciona 24 horas em minutos
+    }
+
+    return diferenca;
   };
 
   // Função para calcular valor total
-  const calcularValorTotal = (valorHora: number, tempoSuporteHoras: number): number => {
-    return valorHora * tempoSuporteHoras;
+  const calcularValorTotal = (valorHora: number, tempoSuporteMinutos: number): number => {
+    const horas = tempoSuporteMinutos / 60; // Converte minutos para horas
+    return valorHora * horas;
   };
 
   // useEffect para recalcular quando hora_inicio ou hora_fim mudam
@@ -86,7 +93,7 @@ export function ModalSuportes({
     setCliente_id(suporte?.cliente_id || 0);
     setDescricao(suporte?.descricao || "");
     setValor_hora(suporte?.valor_hora || 0);
-    setData_suporte(suporte?.data_suporte || new Date());
+    setData_suporte(suporte?.data_suporte ? new Date(suporte.data_suporte) : new Date());
     setHora_inicio(suporte?.hora_inicio ? new Date(suporte.hora_inicio).toTimeString().substring(0,5) : "");
     setHora_fim(suporte?.hora_fim ? new Date(suporte.hora_fim).toTimeString().substring(0,5) : "");
     setTempo_suporte(suporte?.tempo_suporte || 0);
@@ -158,15 +165,15 @@ export function ModalSuportes({
             />
             <FormInput label="Descrição" value={descricao} onChange={(e) => setDescricao(e.target.value)} required/>
             <FormInput label="Valor Hora" type="number" value={valor_hora} onChange={(e) => setValor_hora(Number(e.target.value))} required/>
-            <FormInput label="Data do Suporte" type="date" value={data_suporte.toISOString().split('T')[0]} onChange={(e) => setData_suporte(new Date(e.target.value))} required/>
+            <FormInput label="Data do Suporte" type="date" value={data_suporte.toISOString().split('T')[0]} onChange={(e) => setData_suporte(new Date(e.target.value + 'T00:00:00'))} required/>
             <FormInput label="Hora Início" type="time" value={hora_inicio} onChange={(e) => {
               setHora_inicio(e.target.value);
             }} required/>
             <FormInput label="Hora Fim" type="time" value={hora_fim} onChange={(e) => {
               setHora_fim(e.target.value);
             }} required/>
-            <FormInput label="Tempo Suporte (horas)" type="number" value={tempo_suporte.toFixed(2)} onChange={() => {}} disabled required/>
-            <FormInput label="Valor Total" type="number" value={valor_total.toFixed(2)} onChange={() => {}} disabled required/>
+            <FormInput label="Tempo Suporte (horas)" type="number" value={(Number(tempo_suporte) / 60).toFixed(2)} onChange={() => {}} disabled required/>
+            <FormInput label="Valor Total" type="number" value={Number(valor_total).toFixed(2)} onChange={() => {}} disabled required/>
           </div>
           <DialogFooter className="mt-4">
             <DialogClose asChild>
@@ -184,6 +191,7 @@ export function ModalSuportes({
               type="button"
               disabled={saving}
               className="px-2 w-28 py-1 text-sm font-medium rounded border border-black/30 text-black hover:translate-transition hover:scale-105 hover:bg-green-400 hover:text-black hover:border-black"
+              onClick={handleSubmit}
             >
               Salvar
             </Button>

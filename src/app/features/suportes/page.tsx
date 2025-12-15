@@ -49,7 +49,13 @@ const columns: Column<Suporte>[] = [
   { 
     key: "tempo_suporte", 
     header: "Tempo Suporte",
-    render: (value, row) => row.tempo_suporte ? `${Number(row.tempo_suporte).toFixed(0)} min` : '-'
+    render: (value, row) => {
+      if (!row.tempo_suporte) return '-';
+      const horas = Number(row.tempo_suporte) / 60; // converte minutos para horas
+      const horasInteiras = Math.floor(horas);
+      const minutos = Math.round((horas - horasInteiras) * 60);
+      return minutos > 0 ? `${horasInteiras}h${minutos}m` : `${horasInteiras}h`;
+    }
   },
   { 
     key: "valor_total", 
@@ -69,41 +75,41 @@ export default function ClientesPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [suporteToDelete, setsuporteToDelete] = useState<Suporte | null>(null);
 
-  // Função editar cliente
-  async function handleEditServico(row: Suporte) {
+  // Função editar Suporte
+  async function handelEditSuporte(row: Suporte) {
     setsuporteToEdit(row);
     setmodalEditServico(true);
   }
 
-  // Excluir cliente
+  // Excluir Suporte
   function handleDeleteClick(row: Suporte) {
     setsuporteToDelete(row);
     setShowDeleteModal(true);
   }
 
-  // Função chamada ao salvar novo servico
-  const handleCreateServico = async (data: SuporteInput) => {
+  // Função chamada ao salvar novo suporte
+  const handleCreateSuporte = async (data: SuporteInput) => {
     try {
       await create(data);
       setShowCreateModal(false);
     } catch (error) {
-      console.error("Erro ao criar cliente:", error);
+      console.error("Erro ao criar suporte:", error);
     }
   };
 
-  async function confirmDeleteServico(id: number) {
+  async function confirmDeleteSuporte(id: number) {
     try {
       await remove(id);
-      toast.success("Cliente excluído com sucesso!");
+      toast.success("Suporte excluído com sucesso!");
       setShowDeleteModal(false);
       setsuporteToDelete(null);
     } catch (error) {
-      toast.error("Erro ao excluir cliente." + (error as Error).message);
+      toast.error("Erro ao excluir suporte  ." + (error as Error).message);
     }
   }
 
   // Função chamada ao salvar edição
-  const handleUpdateCliente = async (data: SuporteInput) => {
+  const handleUpdateSuporte = async (data: SuporteInput) => {
     try {
       if (!suporteToEdit) return;
       await update(suporteToEdit.id, data);
@@ -141,7 +147,7 @@ export default function ClientesPage() {
             columns={columns}
             data={suportes ?? []}
             tableCaption="Tabela de Serviços"
-            onEdit={handleEditServico}
+            onEdit={handelEditSuporte}
             onDelete={handleDeleteClick}
           />
         )}
@@ -153,13 +159,13 @@ export default function ClientesPage() {
               setmodalEditServico(false);
               setsuporteToEdit(null);
             }}
-            onSave={handleUpdateCliente}
+            onSave={handleUpdateSuporte}
           />
         )}
         {showCreateModal && (
           <ModalSuportes
             onClose={() => setShowCreateModal(false)}
-            onSave={handleCreateServico}
+            onSave={handleCreateSuporte}
           />
         )}
 
@@ -170,7 +176,7 @@ export default function ClientesPage() {
               setShowDeleteModal(false);
               setsuporteToDelete(null);
             }}
-            onDelete={confirmDeleteServico}
+            onDelete={confirmDeleteSuporte}
           />
         )}
       </div>
@@ -187,7 +193,19 @@ function ModalEditSuporte({
   onClose: () => void;
   onSave: (data: SuporteInput) => void;
 }) {
-  return <ModalSuportes onClose={onClose} onSave={onSave} suporte={row} />;
+  // Converter Suporte para SuporteInput
+  const suporteInput: SuporteInput = {
+    cliente_id: row.cliente_id,
+    descricao: row.descricao,
+    valor_hora: row.valor_hora,
+    data_suporte: row.data_suporte,
+    hora_inicio: row.hora_inicio,
+    hora_fim: row.hora_fim,
+    tempo_suporte: row.tempo_suporte,
+    valor_total: row.valor_total,
+  };
+  
+  return <ModalSuportes onClose={onClose} onSave={onSave} suporte={suporteInput} />;
 }
 
 function ModalExcluirSuporte({

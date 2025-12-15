@@ -1,5 +1,3 @@
-// Ajuste o provider/url conforme seu banco.
-// Para SQLite (como no Django atual):
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")

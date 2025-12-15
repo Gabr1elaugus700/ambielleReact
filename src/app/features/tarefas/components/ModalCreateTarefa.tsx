@@ -134,8 +134,8 @@ export function ModalTarefa({
       onSave({
         tipo_servico: Number(tipoServico),
         cliente_id: Number(clienteId),
-        data_inicio: new Date(dataInicio),
-        prazo_final: dataFim ? new Date(dataFim) : new Date(dataInicio),
+        data_inicio: new Date(dataInicio + 'T00:00:00'),
+        prazo_final: dataFim ? new Date(dataFim + 'T00:00:00') : new Date(dataInicio + 'T00:00:00'),
         observacoes: observacao,
         valor_total_servico: valorTotalServico ? Number(valorTotalServico) : 0,
         status: status as TarefaStatus,
@@ -258,7 +258,7 @@ export function ModalTarefa({
                 </SelectTrigger>
                 <SelectContent className="max-h-60 overflow-y-auto bg-white dark:bg-gray-800">
                   <SelectItem value="Iniciado">Iniciado</SelectItem>
-                  <SelectItem value="Coleta_de_Informações">
+                  <SelectItem value="Coleta_De_Informações">
                     Coleta de Informações
                   </SelectItem>
                   <SelectItem value="Execucao">Execução</SelectItem>
