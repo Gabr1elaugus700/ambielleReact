@@ -1,7 +1,9 @@
-import type { NextRequest } from 'next/server'
-import puppeteer from 'puppeteer'
-import prisma from '@/lib/prisma'
+import type { NextRequest } from "next/server";
+import puppeteer from "puppeteer";
+import prisma from "@/lib/prisma";
+import { formatarCNPJ, formatarTelefone, formatarData } from "@/lib/formatters";
 
+// Garanta que essa rota rode no runtime Node.js (não Edge)
 export const runtime = 'nodejs'
 
 type ClienteComTarefas = {
@@ -10,6 +12,7 @@ type ClienteComTarefas = {
   cnpj: string;
   telefone: string | null;
   email: string | null;
+  data_cadastro: Date | null;
   tarefas: {
     id: number;
     tipoServico: { nome: string };
@@ -20,16 +23,16 @@ type ClienteComTarefas = {
 }
 
 function escapeHtml(text?: string | null) {
-  if (!text) return '—'
+  if (!text) return "—";
   return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
-function buildHtml(clientes: ClienteComTarefas[]) {
+function buildHtml(clientes: ClienteComTarefas[], filtros: { dataInicial: string | null; dataFinal: string | null }) {
   return `<!DOCTYPE html>
 <html>
   <head>
@@ -131,16 +134,28 @@ function buildHtml(clientes: ClienteComTarefas[]) {
   </head>
   <body>
     <h1>Relatório de Clientes</h1>
-    <div class="meta">Total de clientes: ${clientes.length}</div>
-    
+    <div class="meta">
+      ${
+        filtros.dataInicial || filtros.dataFinal
+          ? `Período: ${
+              filtros.dataInicial ? formatarData(filtros.dataInicial) : "início"
+            } até ${
+              filtros.dataFinal ? formatarData(filtros.dataFinal) : "hoje"
+            }<br>`
+          : ""
+      }
+      Total de clientes: ${clientes.length}
+    </div>
+
     ${clientes.map((cliente, index) => `
       <div class="cliente-section">
         <div class="cliente-header">
           <h2 class="cliente-nome">${escapeHtml(cliente.nome)}</h2>
-          <div class="cliente-info">CNPJ: ${escapeHtml(cliente.cnpj)}</div>
-          <div class="cliente-info">Tel: ${escapeHtml(cliente.telefone)} | Email: ${escapeHtml(cliente.email)}</div>
+          <div class="cliente-info">CNPJ: ${escapeHtml(formatarCNPJ(cliente.cnpj))}</div>
+          <div class="cliente-info">Tel: ${escapeHtml(formatarTelefone(cliente.telefone ?? ""))} | Email: ${escapeHtml(cliente.email)}</div>
+          <div class="cliente-info">Data Cadastro: ${escapeHtml(formatarData(cliente.data_cadastro ? cliente.data_cadastro.toISOString() : null))}</div>
         </div>
-        
+
         <div class="tarefas-container">
           ${cliente.tarefas && cliente.tarefas.length > 0 ? `
             <div class="tarefas-title">Tarefas Realizadas (${cliente.tarefas.length})</div>
@@ -175,11 +190,29 @@ function buildHtml(clientes: ClienteComTarefas[]) {
       ${index < clientes.length - 1 ? '<div class="separator"></div>' : ''}
     `).join('')}
   </body>
-</html>`
+</html>`;
 }
 
 export async function GET(req: NextRequest) {
+  // 1) Obter parâmetros de filtro da URL
+  const searchParams = req.nextUrl.searchParams;
+  const dataInicial = searchParams.get("dataInicial");
+  const dataFinal = searchParams.get("dataFinal");
+
+  // 2) Construir where clause do Prisma
+  let where = {};
+  if (dataInicial || dataFinal) {
+    where = {
+      data_cadastro: {
+        ...(dataInicial && { gte: new Date(dataInicial) }),
+        ...(dataFinal && { lte: new Date(dataFinal + "T23:59:59.999Z") }), // Inclui todo o dia final
+      },
+    };
+  }
+
+  // 3) Obter dados com filtros e incluir tarefas
   const clientes = await prisma.cliente.findMany({
+    where,
     orderBy: { id: 'desc' },
     take: 200,
     include: {
@@ -196,32 +229,36 @@ export async function GET(req: NextRequest) {
     },
   })
 
-  const html = buildHtml(clientes)
+  const html = buildHtml(clientes, { dataInicial, dataFinal })
+  console.log('HTML gerado para PDF:', html)
 
+  // 2) Iniciar Chromium compatível com Vercel
   const browser = await puppeteer.launch({ headless: true })
 
   try {
+    // 3) Renderizar o HTML e gerar PDF
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'load' })
     const pdfUint8 = await page.pdf({
-      format: 'A4',
+      format: "A4",
       printBackground: true,
-      landscape: true,
+      landscape: true, // orientação horizontal
       margin: { top: '12mm', right: '12mm', bottom: '12mm', left: '12mm' },
-      preferCSSPageSize: true,
+      preferCSSPageSize: true, // use se quiser respeitar @page size do CSS
     })
 
+    // 4) Converter para Uint8Array (BodyInit compatível)
     const pdfBuffer = Buffer.from(pdfUint8)
 
     return new Response(pdfBuffer, {
       status: 200,
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'inline; filename="relatorio-clientes.pdf"',
-        'Cache-Control': 'no-store',
+        "Content-Type": "application/pdf",
+        "Content-Disposition": 'inline; filename="relatorio-clientes.pdf"',
+        "Cache-Control": "no-store",
       },
-    })
+    });
   } finally {
-    await browser.close()
+    await browser.close();
   }
 }

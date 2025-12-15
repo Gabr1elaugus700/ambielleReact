@@ -20,14 +20,48 @@ import { Column } from "@/types/types"
 
 // Definição das colunas da tabela de clientes
 const columns: Column<Suporte>[] = [
-  { key: "cliente_id", header: "Cliente" },
+  { 
+    key: "cliente", 
+    header: "Cliente",
+    render: (value, row) => row.cliente?.nome || 'Cliente não encontrado'
+  },
   { key: "descricao", header: "Descrição" },
-  { key: "valor_hora", header: "Valor Hora" },
-  { key: "data_suporte", header: "Data do Suporte" },
-  { key: "hora_inicio", header: "Hora Início" },
-  { key: "hora_fim", header: "Hora Fim" },
-  { key: "tempo_suporte", header: "Tempo Suporte (min)" },
-  { key: "valor_total", header: "Valor Total" },
+  { 
+    key: "valor_hora", 
+    header: "Valor Hora",
+    render: (value, row) => `R$ ${Number(row.valor_hora).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+  },
+  { 
+    key: "data_suporte", 
+    header: "Data do Suporte",
+    render: (value, row) => new Date(row.data_suporte).toLocaleDateString('pt-BR')
+  },
+  { 
+    key: "hora_inicio", 
+    header: "Hora Início",
+    render: (value, row) => new Date(row.hora_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  },
+  { 
+    key: "hora_fim", 
+    header: "Hora Fim",
+    render: (value, row) => row.hora_fim ? new Date(row.hora_fim).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-'
+  },
+  { 
+    key: "tempo_suporte", 
+    header: "Tempo Suporte",
+    render: (value, row) => {
+      if (!row.tempo_suporte) return '-';
+      const horas = Number(row.tempo_suporte) / 60; // converte minutos para horas
+      const horasInteiras = Math.floor(horas);
+      const minutos = Math.round((horas - horasInteiras) * 60);
+      return minutos > 0 ? `${horasInteiras}h${minutos}m` : `${horasInteiras}h`;
+    }
+  },
+  { 
+    key: "valor_total", 
+    header: "Valor Total",
+    render: (value, row) => `R$ ${Number(row.valor_total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+  },
 ];
 
 export default function ClientesPage() {
@@ -41,41 +75,41 @@ export default function ClientesPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [suporteToDelete, setsuporteToDelete] = useState<Suporte | null>(null);
 
-  // Função editar cliente
-  async function handleEditServico(row: Suporte) {
+  // Função editar Suporte
+  async function handelEditSuporte(row: Suporte) {
     setsuporteToEdit(row);
     setmodalEditServico(true);
   }
 
-  // Excluir cliente
+  // Excluir Suporte
   function handleDeleteClick(row: Suporte) {
     setsuporteToDelete(row);
     setShowDeleteModal(true);
   }
 
-  // Função chamada ao salvar novo servico
-  const handleCreateServico = async (data: SuporteInput) => {
+  // Função chamada ao salvar novo suporte
+  const handleCreateSuporte = async (data: SuporteInput) => {
     try {
       await create(data);
       setShowCreateModal(false);
     } catch (error) {
-      console.error("Erro ao criar cliente:", error);
+      console.error("Erro ao criar suporte:", error);
     }
   };
 
-  async function confirmDeleteServico(id: number) {
+  async function confirmDeleteSuporte(id: number) {
     try {
       await remove(id);
-      toast.success("Cliente excluído com sucesso!");
+      toast.success("Suporte excluído com sucesso!");
       setShowDeleteModal(false);
       setsuporteToDelete(null);
     } catch (error) {
-      toast.error("Erro ao excluir cliente." + (error as Error).message);
+      toast.error("Erro ao excluir suporte  ." + (error as Error).message);
     }
   }
 
   // Função chamada ao salvar edição
-  const handleUpdateCliente = async (data: SuporteInput) => {
+  const handleUpdateSuporte = async (data: SuporteInput) => {
     try {
       if (!suporteToEdit) return;
       await update(suporteToEdit.id, data);
@@ -113,36 +147,36 @@ export default function ClientesPage() {
             columns={columns}
             data={suportes ?? []}
             tableCaption="Tabela de Serviços"
-            onEdit={handleEditServico}
+            onEdit={handelEditSuporte}
             onDelete={handleDeleteClick}
           />
         )}
 
         {modalEditServico && suporteToEdit && (
-          <ModalEditCliente
+          <ModalEditSuporte
             row={suporteToEdit}
             onClose={() => {
               setmodalEditServico(false);
               setsuporteToEdit(null);
             }}
-            onSave={handleUpdateCliente}
+            onSave={handleUpdateSuporte}
           />
         )}
         {showCreateModal && (
           <ModalSuportes
             onClose={() => setShowCreateModal(false)}
-            onSave={handleCreateServico}
+            onSave={handleCreateSuporte}
           />
         )}
 
         {showDeleteModal && suporteToDelete && (
-          <ModalExcluirCliente
+          <ModalExcluirSuporte
             row={suporteToDelete}
             onClose={() => {
               setShowDeleteModal(false);
               setsuporteToDelete(null);
             }}
-            onDelete={confirmDeleteServico}
+            onDelete={confirmDeleteSuporte}
           />
         )}
       </div>
@@ -150,8 +184,7 @@ export default function ClientesPage() {
   );
 }
 
-// ModalEditCliente agora recebe onSave
-function ModalEditCliente({
+function ModalEditSuporte({
   row,
   onClose,
   onSave,
@@ -160,10 +193,22 @@ function ModalEditCliente({
   onClose: () => void;
   onSave: (data: SuporteInput) => void;
 }) {
-  return <ModalSuportes onClose={onClose} onSave={onSave} suporte={row} />;
+  // Converter Suporte para SuporteInput
+  const suporteInput: SuporteInput = {
+    cliente_id: row.cliente_id,
+    descricao: row.descricao,
+    valor_hora: row.valor_hora,
+    data_suporte: row.data_suporte,
+    hora_inicio: row.hora_inicio,
+    hora_fim: row.hora_fim,
+    tempo_suporte: row.tempo_suporte,
+    valor_total: row.valor_total,
+  };
+  
+  return <ModalSuportes onClose={onClose} onSave={onSave} suporte={suporteInput} />;
 }
 
-function ModalExcluirCliente({
+function ModalExcluirSuporte({
   row,
   onClose,
   onDelete,

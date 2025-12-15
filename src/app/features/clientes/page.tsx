@@ -19,45 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Column } from "@/types/types";
 
-// Funções de formatação para exibição na tabela
-const formatarCNPJ = (cnpj: string) => {
-  if (!cnpj) return "";
-  const numeros = cnpj.replace(/\D/g, "");
-  return numeros
-    .slice(0, 14)
-    .replace(/(\d{2})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1/$2")
-    .replace(/(\d{4})(\d)/, "$1-$2");
-};
-
-const formatarTelefone = (telefone: string) => {
-  if (!telefone) return "";
-  const numeros = telefone.replace(/\D/g, "");
-  if (numeros.length <= 10) {
-    return numeros
-      .slice(0, 10)
-      .replace(/(\d{2})(\d)/, "($1) $2")
-      .replace(/(\d{4})(\d)/, "$1-$2");
-  } else {
-    return numeros
-      .slice(0, 11)
-      .replace(/(\d{2})(\d)/, "($1) $2")
-      .replace(/(\d{5})(\d)/, "$1-$2");
-  }
-};
-
-// Função para formatar data para dd/mm/yyyy
-const formatarData = (dataStr: string | null | undefined) => {
-  if (!dataStr) return "";
-  // Aceita ISO ou yyyy-MM-dd
-  const d = new Date(dataStr);
-  if (isNaN(d.getTime())) return dataStr; // Se não for data válida, retorna original
-  const dia = String(d.getDate()).padStart(2, "0");
-  const mes = String(d.getMonth() + 1).padStart(2, "0");
-  const ano = d.getFullYear();
-  return `${dia}/${mes}/${ano}`;
-};
+import { formatarCNPJ, formatarTelefone, formatarData } from "@/lib/formatters";
 
 // Definição das colunas da tabela de clientes
 const columns: Column<Cliente>[] = [

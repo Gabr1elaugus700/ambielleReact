@@ -7,12 +7,18 @@ export const runtime = "nodejs";
 
 export type TarefaStatus =
   | "Iniciado"
-  | "Coleta_De_Informações"
+  | "Coleta_de_Informações"
   | "Execucao"
   | "Aprovação_Cliente"
   | "Concluído"
   | "Encerrado"
   | "Protocolado";
+
+// Função para formatar o status para exibição
+function formatarStatus(status: string): string {
+  return status.replace(/_/g, ' ');
+}
+
 // Exemplo de dados (substitua por busca no banco/Prisma se quiser)
 type TarefaRelatorio = {
   id: number;
@@ -20,6 +26,7 @@ type TarefaRelatorio = {
   tipoServico: { nome: string };
   status: string;
   prazo_final: Date | null;
+  observacao: string | null;
 };
 
 function escapeHtml(text?: string | null) {
@@ -58,6 +65,7 @@ function buildHtml(tarefas: TarefaRelatorio[]) {
           <th>Cliente</th>
           <th>Tipo Serviço</th>
           <th>Status</th>
+          <th>Observação</th>
           <th>Prazo Final</th>
         </tr>
       </thead>
@@ -70,6 +78,7 @@ function buildHtml(tarefas: TarefaRelatorio[]) {
             <td>${escapeHtml(t.cliente?.nome)}</td>
             <td>${escapeHtml(t.tipoServico?.nome)}</td>
             <td>${escapeHtml(t.status)}</td>
+            <td>${escapeHtml(t.observacao)}</td>
             <td>${
               t.prazo_final
                 ? new Date(t.prazo_final).toLocaleDateString("pt-BR")
@@ -89,27 +98,31 @@ export async function GET(req: NextRequest) {
   // 1) Obter filtros da URL
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") ?? undefined;
+  const dataInicial = searchParams.get("dataInicial") ?? undefined;
+  const dataFinal = searchParams.get("dataFinal") ?? undefined;
   const clienteId = searchParams.get("cliente_id")
     ? Number(searchParams.get("cliente_id"))
     : undefined;
-  const prazoFinal = searchParams.get("prazo_final") ?? undefined;
 
   // 2) Montar filtro Prisma
-  type TarefaWhere = {
-    status?: TarefaStatus;
-    cliente_id?: number;
-    prazo_final?: { lte: Date };
-  };
-  const where: TarefaWhere = {};
-  if (status) where.status = status as TarefaStatus;
-  if (clienteId) where.cliente_id = clienteId;
-  if (prazoFinal) {
-    where.prazo_final = { lte: new Date(prazoFinal) };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = {};
+  if (status && status !== 'todos') {
+    where.status = status;
+  }
+  if (clienteId) {
+    where.cliente_id = clienteId;
+  }
+  if (dataInicial || dataFinal) {
+    where.data_inicio = {
+      ...(dataInicial && { gte: new Date(dataInicial) }),
+      ...(dataFinal && { lte: new Date(dataFinal + 'T23:59:59.999Z') })
+    };
   }
 
   // 3) Buscar tarefas
   const tarefas = await prisma.tarefa.findMany({
-    where: where,
+    where,
     include: {
       cliente: true,
       tipoServico: true,
@@ -121,10 +134,11 @@ export async function GET(req: NextRequest) {
   // Mapeia para o tipo TarefaRelatorio
   const tarefasRelatorio: TarefaRelatorio[] = tarefas.map((t) => ({
     id: t.id,
-    cliente: t.cliente,
-    tipoServico: t.tipoServico,
-    status: t.status,
+    cliente: { nome: t.cliente.nome },
+    tipoServico: { nome: t.tipoServico.nome },
+    status: formatarStatus(t.status),
     prazo_final: t.prazo_final,
+    observacao: t.observacoes // Corrigido: campo correto é 'observacoes' não 'observacao'
   }));
   const html = buildHtml(tarefasRelatorio);
   console.log("HTML gerado para PDF:", html);

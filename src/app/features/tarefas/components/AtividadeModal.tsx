@@ -80,7 +80,7 @@ export function AtividadeModal({ atividade, open, onOpenChange, onUpdate }: Ativ
 
   const statusOptions = [
     { value: "Iniciado", label: "Iniciado" },
-    { value: "Coleta_de_Informações", label: "Coleta de Informações" },
+    { value: "Coleta_De_Informações", label: "Coleta de Informações" },
     { value: "Execucao", label: "Execução" },
     { value: "Aprovação_Cliente", label: "Aprovação Cliente" },
     { value: "Concluído", label: "Concluído" },
@@ -224,7 +224,7 @@ export function AtividadeModal({ atividade, open, onOpenChange, onUpdate }: Ativ
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Selecione o status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60 overflow-y-auto bg-white">
                       {statusOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}

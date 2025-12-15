@@ -41,7 +41,7 @@ export function Kanban() {
   const [data, setData] = useState<TaskDialogData | undefined>()
   const [tarefas, setTarefas] = useState<TarefaKanban[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [diasVencimento, setDiasVencimento] = useState(7) // Padrão 7 dias
+  const [diasVencimento, setDiasVencimento] = useState(20) // Padrão 20 dias
   const [showSettings, setShowSettings] = useState(false)
   const router = useRouter()
 
