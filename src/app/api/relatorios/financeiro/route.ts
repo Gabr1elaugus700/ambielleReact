@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import puppeteer from "puppeteer";
 import prisma from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
+import ExcelJS from "exceljs";
 
 export const runtime = "nodejs";
 
@@ -65,7 +66,7 @@ function buildHtml(tarefas: TarefaFinanceira[], suportes: SuporteFinanceiro[], d
     <meta charset="utf-8" />
     <title>Relatório Financeiro</title>
     <style>
-      @page { size: A4 landscape; margin: 12mm; }
+      @page { size: A4 portrait; margin: 12mm; }
       body { font-family: Arial, sans-serif; color: #111; background: #fff; }
       h1 { text-align: center; margin: 0 0 20px; color: #000; font-size: 20px; border-bottom: 3px solid #000; padding-bottom: 10px; }
       .meta { color: #666; font-size: 12px; margin-bottom: 20px; text-align: center; }
@@ -175,8 +176,236 @@ function buildHtml(tarefas: TarefaFinanceira[], suportes: SuporteFinanceiro[], d
 </html>`;
 }
 
+async function buildExcel(tarefas: TarefaFinanceira[], suportes: SuporteFinanceiro[], dataInicio: string, dataFim: string, incluirSuportes: boolean) {
+  const workbook = new ExcelJS.Workbook();
+  
+  const totalTarefas = tarefas
+    .filter((t) => t.valor_total_servico)
+    .reduce((acc, t) => acc + Number(t.valor_total_servico || 0), 0);
+  
+  const totalSuportes = incluirSuportes ? suportes
+    .filter((s) => s.valor_total)
+    .reduce((acc, s) => acc + Number(s.valor_total || 0), 0) : 0;
+  
+  const totalReceitas = totalTarefas + totalSuportes;
+
+  // Criar planilha de Serviços (Tarefas)
+  const wsTarefas = workbook.addWorksheet("Serviços");
+  
+  wsTarefas.columns = [
+    { header: "ID", key: "id", width: 10 },
+    { header: "Data Início", key: "dataInicio", width: 15 },
+    { header: "Cliente", key: "cliente", width: 30 },
+    { header: "CNPJ", key: "cnpj", width: 20 },
+    { header: "Tarefa - Serviço - Órgão", key: "descricao", width: 40 },
+    { header: "Prazo Final", key: "prazoFinal", width: 15 },
+    { header: "Valor", key: "valor", width: 15 },
+  ];
+
+  // Estilizar cabeçalho
+  wsTarefas.getRow(1).font = { bold: true };
+  wsTarefas.getRow(1).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFD9D9D9" },
+  };
+
+  // Adicionar dados de tarefas
+  tarefas.forEach((t) => {
+    const tarefaInfo = `Tarefa ${t.id} - ${t.tipoServico?.nome || ''}${t.tipoServico?.orgao ? ` - ${t.tipoServico.orgao}` : ''}`;
+    const row = wsTarefas.addRow({
+      id: t.id,
+      dataInicio: new Date(t.data_inicio).toLocaleDateString("pt-BR"),
+      cliente: t.cliente?.nome || "—",
+      cnpj: formatCnpj(t.cliente?.cnpj),
+      descricao: tarefaInfo,
+      prazoFinal: t.prazo_final ? new Date(t.prazo_final).toLocaleDateString("pt-BR") : "—",
+      valor: t.valor_total_servico ? `R$ ${Number(t.valor_total_servico).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—",
+    });
+
+    // Bordas
+    row.eachCell((cell) => {
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+  });
+
+  // Adicionar linha de total
+  const rowTotal = wsTarefas.addRow({
+    id: "",
+    dataInicio: "",
+    cliente: "",
+    cnpj: "",
+    descricao: "",
+    prazoFinal: "TOTAL:",
+    valor: `R$ ${totalTarefas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+  });
+  rowTotal.font = { bold: true };
+  rowTotal.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE8E8E8" },
+  };
+  rowTotal.eachCell((cell) => {
+    cell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    };
+  });
+
+  if (tarefas.length === 0) {
+    const row = wsTarefas.addRow({
+      id: "",
+      dataInicio: "",
+      cliente: "Nenhum serviço encontrado neste período",
+      cnpj: "",
+      descricao: "",
+      prazoFinal: "",
+      valor: "",
+    });
+    row.getCell(3).font = { italic: true, color: { argb: "FF999999" } };
+  }
+
+  // Criar planilha de Suportes se necessário
+  if (incluirSuportes) {
+    const wsSuportes = workbook.addWorksheet("Suportes");
+    
+    wsSuportes.columns = [
+      { header: "ID", key: "id", width: 10 },
+      { header: "Data", key: "data", width: 15 },
+      { header: "Cliente", key: "cliente", width: 30 },
+      { header: "CNPJ", key: "cnpj", width: 20 },
+      { header: "Descrição", key: "descricao", width: 40 },
+      { header: "Prazo Final", key: "prazoFinal", width: 15 },
+      { header: "Valor", key: "valor", width: 15 },
+    ];
+
+    // Estilizar cabeçalho
+    wsSuportes.getRow(1).font = { bold: true };
+    wsSuportes.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFD9D9D9" },
+    };
+
+    // Adicionar dados de suportes
+    suportes.forEach((s) => {
+      const row = wsSuportes.addRow({
+        id: `SUP-${s.id}`,
+        data: new Date(s.data_suporte).toLocaleDateString("pt-BR"),
+        cliente: s.cliente?.nome || "—",
+        cnpj: formatCnpj(s.cliente?.cnpj),
+        descricao: `Suporte - ${s.descricao || ''}`,
+        prazoFinal: "—",
+        valor: s.valor_total ? `R$ ${Number(s.valor_total).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—",
+      });
+
+      // Bordas
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+    });
+
+    // Adicionar linha de total
+    const rowTotalSup = wsSuportes.addRow({
+      id: "",
+      data: "",
+      cliente: "",
+      cnpj: "",
+      descricao: "",
+      prazoFinal: "TOTAL:",
+      valor: `R$ ${totalSuportes.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    });
+    rowTotalSup.font = { bold: true };
+    rowTotalSup.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFE8E8E8" },
+    };
+    rowTotalSup.eachCell((cell) => {
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
+    if (suportes.length === 0) {
+      const row = wsSuportes.addRow({
+        id: "",
+        data: "",
+        cliente: "Nenhum suporte encontrado neste período",
+        cnpj: "",
+        descricao: "",
+        prazoFinal: "",
+        valor: "",
+      });
+      row.getCell(3).font = { italic: true, color: { argb: "FF999999" } };
+    }
+
+    // Adicionar planilha de resumo geral
+    const wsResumo = workbook.addWorksheet("Resumo");
+    wsResumo.columns = [
+      { header: "Descrição", key: "descricao", width: 30 },
+      { header: "Valor", key: "valor", width: 20 },
+    ];
+
+    wsResumo.getRow(1).font = { bold: true };
+    wsResumo.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFD9D9D9" },
+    };
+
+    wsResumo.addRow({
+      descricao: "Total de Serviços",
+      valor: `R$ ${totalTarefas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    });
+    wsResumo.addRow({
+      descricao: "Total de Suportes",
+      valor: `R$ ${totalSuportes.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    });
+    const rowGrandTotal = wsResumo.addRow({
+      descricao: "TOTAL GERAL",
+      valor: `R$ ${totalReceitas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    });
+    rowGrandTotal.font = { bold: true };
+    rowGrandTotal.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFE8E8E8" },
+    };
+
+    wsResumo.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+    });
+  }
+
+  return await workbook.xlsx.writeBuffer();
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
+  const format = searchParams.get("format") || "pdf";
   const dataInicio = searchParams.get("dataInicio") || new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0];
   const dataFim = searchParams.get("dataFim") || new Date().toISOString().split('T')[0];
   const incluirSuportes = searchParams.get("incluirSuportes") === "true";
@@ -231,6 +460,19 @@ export async function GET(req: NextRequest) {
     take: 200,
   }) : [];
 
+  if (format === "excel") {
+    const buffer = await buildExcel(tarefas, suportes, dataInicio, dataFim, incluirSuportes);
+    
+    return new Response(buffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": 'attachment; filename="relatorio-financeiro.xlsx"',
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
   const html = buildHtml(tarefas, suportes, dataInicio, dataFim, incluirSuportes);
 
   const browser = await puppeteer.launch({ headless: true });
@@ -241,7 +483,7 @@ export async function GET(req: NextRequest) {
     const pdfUint8 = await page.pdf({
       format: "A4",
       printBackground: true,
-      landscape: true,
+      landscape: false,
       margin: { top: "12mm", right: "12mm", bottom: "12mm", left: "12mm" },
     });
 

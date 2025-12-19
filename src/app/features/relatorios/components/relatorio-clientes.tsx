@@ -16,20 +16,30 @@ export function RelatorioClientes() {
       if (filtros?.dataInicial) params.append('dataInicial', filtros.dataInicial);
       if (filtros?.dataFinal) params.append('dataFinal', filtros.dataFinal);
       
-      const resp = await fetch(`/api/relatorios/clientes?${params.toString()}`);
+      const resp = await fetch(`/api/relatorios/cliente?${params.toString()}`);
+      
+      if (!resp.ok) {
+        throw new Error('Erro ao gerar relatório');
+      }
+      
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
       
       if (format === "pdf") {
-        window.open(url, "_blank"); // Abre o PDF em nova aba
+        window.open(url, "_blank");
+        setTimeout(() => window.URL.revokeObjectURL(url), 100);
       } else {
         const a = document.createElement("a");
         a.href = url;
-        a.download = "clientes.xlsx";
+        a.download = "relatorio-clientes.xlsx";
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
       }
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);
+      throw error;
     } finally {
       setLoading(false);
     }

@@ -21,17 +21,26 @@ export function RelatorioSuportes() {
       if (filtros?.dataFinal) params.append('dataFinal', filtros.dataFinal);
       if (filtros?.clienteId) params.append('clienteId', filtros.clienteId);
       
-      const resp = await fetch(`/api/relatorios/suportes?${params.toString()}`);
+      const resp = await fetch(`/api/relatorios/suporte?${params.toString()}`);
+      
+      if (!resp.ok) {
+        throw new Error('Erro ao gerar relatório');
+      }
+      
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
       
       if (format === "pdf") {
         window.open(url, "_blank");
+        setTimeout(() => window.URL.revokeObjectURL(url), 100);
       } else {
         const a = document.createElement("a");
         a.href = url;
-        a.download = "suportes.xlsx";
+        a.download = "relatorio-suportes.xlsx";
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
       }
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);

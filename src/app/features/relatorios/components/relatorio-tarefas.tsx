@@ -16,17 +16,26 @@ export function RelatorioTarefas() {
       if (filtros?.dataFinal) params.append('dataFinal', filtros.dataFinal);
       if (format) params.append('format', format);
       
-      const resp = await fetch(`/api/relatorios/tarefas?${params.toString()}`);
+      const resp = await fetch(`/api/relatorios/tarefa?${params.toString()}`);
+      
+      if (!resp.ok) {
+        throw new Error('Erro ao gerar relatório');
+      }
+      
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
       
       if (format === "pdf") {
         window.open(url, "_blank");
+        setTimeout(() => window.URL.revokeObjectURL(url), 100);
       } else {
         const a = document.createElement("a");
         a.href = url;
-        a.download = "tarefas.xlsx";
+        a.download = "relatorio-tarefas.xlsx";
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
       }
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);

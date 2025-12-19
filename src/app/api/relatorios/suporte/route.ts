@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import puppeteer from "puppeteer";
 import prisma from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
+import ExcelJS from "exceljs";
 
 export const runtime = "nodejs";
 
@@ -35,7 +36,7 @@ function buildHtml(suportes: Suporte[]) {
     <meta charset="utf-8" />
     <title>Relatório de Suporte</title>
     <style>
-      @page { size: A4 landscape; margin: 12mm; }
+      @page { size: A4 portrait; margin: 12mm; }
       body { font-family: Arial, sans-serif; color: #111; background: #fff; }
       h1 { text-align: center; margin: 0 0 20px; color: #000; font-size: 20px; border-bottom: 3px solid #000; padding-bottom: 10px; }
       .meta { color: #666; font-size: 12px; margin-bottom: 20px; text-align: center; }
@@ -108,7 +109,76 @@ function buildHtml(suportes: Suporte[]) {
 </html>`;
 }
 
+async function buildExcel(suportes: Suporte[]) {
+  const workbook = new ExcelJS.Workbook();
+  const ws = workbook.addWorksheet("Suportes");
+  
+  ws.columns = [
+    { header: "ID", key: "id", width: 10 },
+    { header: "Cliente", key: "cliente", width: 30 },
+    { header: "Descrição", key: "descricao", width: 40 },
+    { header: "Data", key: "data", width: 15 },
+    { header: "Hora Início", key: "horaInicio", width: 15 },
+    { header: "Hora Fim", key: "horaFim", width: 15 },
+    { header: "Tempo (h)", key: "tempo", width: 12 },
+    { header: "Valor/Hora", key: "valorHora", width: 15 },
+    { header: "Valor Total", key: "valorTotal", width: 15 },
+  ];
+
+  // Estilizar cabeçalho
+  ws.getRow(1).font = { bold: true };
+  ws.getRow(1).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFD9D9D9" },
+  };
+
+  // Adicionar dados
+  suportes.forEach((s) => {
+    const row = ws.addRow({
+      id: s.id,
+      cliente: s.cliente?.nome || "—",
+      descricao: s.descricao || "—",
+      data: new Date(s.data_suporte).toLocaleDateString("pt-BR"),
+      horaInicio: new Date(s.hora_inicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+      horaFim: s.hora_fim ? new Date(s.hora_fim).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "—",
+      tempo: s.tempo_suporte ? Number(s.tempo_suporte).toFixed(2) : "—",
+      valorHora: `R$ ${Number(s.valor_hora).toFixed(2)}`,
+      valorTotal: s.valor_total ? `R$ ${Number(s.valor_total).toFixed(2)}` : "—",
+    });
+
+    row.eachCell((cell) => {
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+  });
+
+  if (suportes.length === 0) {
+    const row = ws.addRow({
+      id: "",
+      cliente: "",
+      descricao: "Nenhum suporte encontrado",
+      data: "",
+      horaInicio: "",
+      horaFim: "",
+      tempo: "",
+      valorHora: "",
+      valorTotal: "",
+    });
+    row.getCell(3).font = { italic: true, color: { argb: "FF999999" } };
+  }
+
+  return await workbook.xlsx.writeBuffer();
+}
+
 export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const format = searchParams.get("format") || "pdf";
+
   const suportes = await prisma.suporte.findMany({
     include: {
       cliente: {
@@ -121,6 +191,19 @@ export async function GET(req: NextRequest) {
     take: 200,
   });
 
+  if (format === "excel") {
+    const buffer = await buildExcel(suportes);
+    
+    return new Response(buffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": 'attachment; filename="relatorio-suporte.xlsx"',
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
   const html = buildHtml(suportes);
 
   const browser = await puppeteer.launch({ headless: true });
@@ -131,7 +214,7 @@ export async function GET(req: NextRequest) {
     const pdfUint8 = await page.pdf({
       format: "A4",
       printBackground: true,
-      landscape: true,
+      landscape: false,
       margin: { top: "12mm", right: "12mm", bottom: "12mm", left: "12mm" },
     });
 

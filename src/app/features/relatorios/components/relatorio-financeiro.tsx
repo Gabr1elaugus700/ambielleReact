@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-
 import { FinanceiroFiltros } from '../types';
 
 export function RelatorioFinanceiro() {
@@ -15,19 +14,34 @@ export function RelatorioFinanceiro() {
       
       if (filtros?.dataInicio) params.append('dataInicio', filtros.dataInicio);
       if (filtros?.dataFim) params.append('dataFim', filtros.dataFim);
-      if (filtros?.tipo) params.append('tipo', filtros.tipo);
       
-      const resp = await fetch(`/api/relatorios/financeiros?${params.toString()}`);
+      // Converter tipo para incluirSuportes
+      if (filtros?.tipo === 'todos' || filtros?.tipo === 'suportes') {
+        params.append('tipo', filtros.tipo);
+      } else if (filtros?.tipo === 'tarefas') {
+        params.append('tipo', 'tarefas');
+      }
+      
+      const resp = await fetch(`/api/relatorios/financeiro?${params.toString()}`);
+      
+      if (!resp.ok) {
+        throw new Error('Erro ao gerar relatório');
+      }
+      
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
       
       if (format === "pdf") {
         window.open(url, "_blank");
+        setTimeout(() => window.URL.revokeObjectURL(url), 100);
       } else {
         const a = document.createElement("a");
         a.href = url;
-        a.download = "financeiro.xlsx";
+        a.download = "relatorio-financeiro.xlsx";
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
       }
     } catch (error) {
       console.error('Erro ao exportar relatório:', error);

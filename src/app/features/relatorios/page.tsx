@@ -73,6 +73,7 @@ export default function Relatorios() {
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
   const [modalAberto, setModalAberto] = useState<string | null>(null);
+  const [formatoAtual, setFormatoAtual] = useState<"pdf" | "excel">("pdf");
   
   // Usar os hooks dos relatórios
   const relatorioClientes = RelatorioClientes();
@@ -83,6 +84,7 @@ export default function Relatorios() {
   const handleExport = async (reportId: string, format: "pdf" | "excel") => {
     // Se o relatório precisa de filtros, abre o modal correspondente
     if (['financeiro', 'suporte', 'tarefas', 'clientes'].includes(reportId)) {
+      setFormatoAtual(format);
       setModalAberto(reportId);
       return;
     }
@@ -113,30 +115,29 @@ export default function Relatorios() {
   // Funções para lidar com a exportação com filtros
   const handleExportComFiltros = async (
     reportId: string, 
-    format: "pdf" | "excel", 
     filtros: TarefasFiltros | SuporteFiltros | FinanceiroFiltros | ClientesFiltros
   ) => {
-    setLoading(`${reportId}-${format}`);
+    setLoading(`${reportId}-${formatoAtual}`);
 
     try {
       switch (reportId) {
         case 'financeiro':
-          await relatorioFinanceiro.exportar(format, filtros as FinanceiroFiltros);
+          await relatorioFinanceiro.exportar(formatoAtual, filtros as FinanceiroFiltros);
           break;
         case 'suporte':
-          await relatorioSuportes.exportar(format, filtros as SuporteFiltros);
+          await relatorioSuportes.exportar(formatoAtual, filtros as SuporteFiltros);
           break;
         case 'tarefas':
-          await relatorioTarefas.exportar(format, filtros as TarefasFiltros);
+          await relatorioTarefas.exportar(formatoAtual, filtros as TarefasFiltros);
           break;
         case 'clientes':
-          await relatorioClientes.exportar(format, filtros as ClientesFiltros);
+          await relatorioClientes.exportar(formatoAtual, filtros as ClientesFiltros);
           break;
       }
 
       toast({
         title: "Relatório exportado com sucesso!",
-        description: `O relatório foi exportado em formato ${format.toUpperCase()}.`,
+        description: `O relatório foi exportado em formato ${formatoAtual.toUpperCase()}.`,
       });
     } catch (err) {
       toast({
@@ -211,26 +212,30 @@ export default function Relatorios() {
       {/* Modais de Filtros */}
       <ModalFiltrosFinanceiro 
         open={modalAberto === 'financeiro'}
+        formato={formatoAtual}
         onClose={() => setModalAberto(null)}
-        onExport={(format, filtros) => handleExportComFiltros('financeiro', format, filtros)}
+        onExport={(filtros) => handleExportComFiltros('financeiro', filtros)}
       />
 
       <ModalFiltrosSuportes
         open={modalAberto === 'suporte'}
+        formato={formatoAtual}
         onClose={() => setModalAberto(null)}
-        onExport={(format, filtros) => handleExportComFiltros('suporte', format, filtros)}
+        onExport={(filtros) => handleExportComFiltros('suporte', filtros)}
       />
 
       <ModalFiltrosTarefas
         open={modalAberto === 'tarefas'}
+        formato={formatoAtual}
         onClose={() => setModalAberto(null)}
-        onExport={(format, filtros) => handleExportComFiltros('tarefas', format, filtros)}
+        onExport={(filtros) => handleExportComFiltros('tarefas', filtros)}
       />
 
       <ModalFiltrosClientes
         open={modalAberto === 'clientes'}
+        formato={formatoAtual}
         onClose={() => setModalAberto(null)}
-        onExport={(format, filtros) => handleExportComFiltros('clientes', format, filtros)}
+        onExport={(filtros) => handleExportComFiltros('clientes', filtros)}
       />
     </main>
   );

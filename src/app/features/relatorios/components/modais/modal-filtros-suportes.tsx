@@ -15,8 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 type Props = {
   open: boolean;
+  formato: "pdf" | "excel";
   onClose: () => void;
-  onExport: (format: "pdf" | "excel", filtros: SuporteFiltros) => Promise<void>;
+  onExport: (filtros: SuporteFiltros) => Promise<void>;
 };
 
 type SuporteFiltros = {
@@ -25,12 +26,11 @@ type SuporteFiltros = {
   clienteId?: string;
 };
 
-export function ModalFiltrosSuportes({ open, onClose, onExport }: Props) {
+export function ModalFiltrosSuportes({ open, formato, onClose, onExport }: Props) {
   const [filtros, setFiltros] = useState<SuporteFiltros>({});
-  const [formatoSelecionado, setFormatoSelecionado] = useState<"pdf" | "excel">("pdf");
 
   const handleExport = async () => {
-    await onExport(formatoSelecionado, filtros);
+    await onExport(filtros);
     onClose();
   };
 
@@ -38,7 +38,7 @@ export function ModalFiltrosSuportes({ open, onClose, onExport }: Props) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="bg-white">
         <DialogHeader>
-          <DialogTitle>Filtros do Relatório de Suportes</DialogTitle>
+          <DialogTitle>Filtros do Relatório de Suportes ({formato.toUpperCase()})</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
@@ -60,27 +60,11 @@ export function ModalFiltrosSuportes({ open, onClose, onExport }: Props) {
               />
             </div>
           </div>
-
-          <div>
-            <Label>Formato de Exportação</Label>
-            <Select
-              value={formatoSelecionado}
-              onValueChange={(value: "pdf" | "excel") => setFormatoSelecionado(value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o formato" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pdf">PDF</SelectItem>
-                <SelectItem value="excel">Excel</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleExport}>Exportar</Button>
+          <Button onClick={handleExport}>Exportar {formato.toUpperCase()}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
